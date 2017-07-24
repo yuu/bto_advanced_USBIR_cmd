@@ -88,53 +88,49 @@ while (true)
 } // end of while
 
 // データ送信要求セット
-if (error_flag == false)
-{
-    outbuffer[0] = 0x35;		//0x81 is the "Get Pushbutton State" command in the firmware
-    outbuffer[1] = (byte)((freq >> 8) & 0xFF);
-    outbuffer[2] = (byte)(freq & 0xFF);
-    outbuffer[3] = (byte)((send_bit_num >> 8) & 0xFF);
-    outbuffer[4] = (byte)(send_bit_num & 0xFF);
-    BytesRead = 0;
+if (error_flag == true)
+    return -3; // データセットエラー
 
-    //To get the pushbutton state, first, we send a packet with our "Get Pushbutton State" command in it.
-    if(libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE ,&BytesWritten, 5000) == 0)
+outbuffer[0] = 0x35;		//0x81 is the "Get Pushbutton State" command in the firmware
+outbuffer[1] = (byte)((freq >> 8) & 0xFF);
+outbuffer[2] = (byte)(freq & 0xFF);
+outbuffer[3] = (byte)((send_bit_num >> 8) & 0xFF);
+outbuffer[4] = (byte)(send_bit_num & 0xFF);
+BytesRead = 0;
+
+//To get the pushbutton state, first, we send a packet with our "Get Pushbutton State" command in it.
+if(libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE ,&BytesWritten, 5000) == 0)
+{
+    //Now get the response packet from the firmware.
     {
-        //Now get the response packet from the firmware.
+        if(libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) == 0)
         {
-            if(libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) == 0)
+            //INBuffer[0] is an echo back of the command (see microcontroller firmware).
+            //INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).  
+            if (inbuffer[0] == 0x35)
             {
-                //INBuffer[0] is an echo back of the command (see microcontroller firmware).
-                //INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).  
-                if (inbuffer[0] == 0x35)
+                if (inbuffer[1] == 0x00)
+                {   // OK
+                    i_ret = 0;
+                }
+                else
                 {
-                    if (inbuffer[1] == 0x00)
-                    {   // OK
-                        i_ret = 0;
-                    }
-                    else
-                    {
-                        // NG
-                        error_flag = true;
-                    }
+                    // NG
+                    error_flag = true;
                 }
             }
-            else
-            {
-                // NG
-                i_ret = -5;
-            }
         }
-    }
-    else
-    {
-        // NG
-        i_ret = -4;
+        else
+        {
+            // NG
+            i_ret = -5;
+        }
     }
 }
 else
-{   // データセットエラー
-    i_ret = -3;
+{
+    // NG
+    i_ret = -4;
 }
 
 return i_ret;
