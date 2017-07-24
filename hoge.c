@@ -3,7 +3,6 @@
 int writeUSBIRData(struct libusb_device_handle *devh, uint freq, byte data[], uint bit_len, uint data_count)
 {
 uint fi;
-int i_ret = -1;
 byte outbuffer[BUFF_SIZE];
 byte inbuffer[BUFF_SIZE];
 int BytesWritten = 0;
@@ -109,7 +108,7 @@ if(libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5
 //INBuffer[0] is an echo back of the command (see microcontroller firmware).
 //INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).  
 if (inbuffer[0] == 0x35 && inbuffer[1] == 0x00)
-    i_ret = 0;
+    return 0;
 
-return i_ret;
+return -1;
 }
