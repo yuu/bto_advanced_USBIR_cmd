@@ -35,6 +35,7 @@ $ bto_advanced_USBIR_cmd --Plarail_Speed_UpAF
 #include <getopt.h>
 
 #include "hoge.h"
+static uint frequency = IR_FREQ_DEFAULT;
 
 #define APP_VERSION "1.0.0"
 

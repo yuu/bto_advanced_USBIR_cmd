@@ -24,7 +24,6 @@ typedef unsigned char bool;
 #define IR_SEND_DATA_MAX_LEN			300		// 赤外線送信データ設定最大長[byte]
 
 #define IR_FREQ_DEFAULT					38000
-static uint frequency = IR_FREQ_DEFAULT;
 
 #define MAX_BYTE_ARRAY_SIZE				9600
 
