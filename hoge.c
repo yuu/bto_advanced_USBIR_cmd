@@ -52,48 +52,48 @@ while (true)
     if (set_bit_size < 1)
         break;
 
-        // データセット
-        // 赤外線コードコピー
-        for (fi = 0; fi < set_bit_size; fi++)
-        {
-            // ON Count
-            outbuffer[6 + (fi * 4)] = data[send_bit_pos * 4];
-            outbuffer[6 + (fi * 4) + 1] = data[(send_bit_pos * 4) + 1];
-            // OFF Count
-            outbuffer[6 + (fi * 4) + 2] = data[(send_bit_pos * 4) + 2];
-            outbuffer[6 + (fi * 4) + 3] = data[(send_bit_pos * 4) + 3];
-            send_bit_pos++;
-        }
-        if(libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE ,&BytesWritten, 5000) == 0)
-        {
+    // データセット
+    // 赤外線コードコピー
+    for (fi = 0; fi < set_bit_size; fi++)
+    {
+        // ON Count
+        outbuffer[6 + (fi * 4)] = data[send_bit_pos * 4];
+        outbuffer[6 + (fi * 4) + 1] = data[(send_bit_pos * 4) + 1];
+        // OFF Count
+        outbuffer[6 + (fi * 4) + 2] = data[(send_bit_pos * 4) + 2];
+        outbuffer[6 + (fi * 4) + 3] = data[(send_bit_pos * 4) + 3];
+        send_bit_pos++;
+    }
+    if(libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE ,&BytesWritten, 5000) == 0)
+    {
 
-            //Now get the response packet from the firmware.
+        //Now get the response packet from the firmware.
+        {
+            if(libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) == 0)
             {
-                if(libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) == 0)
+                //INBuffer[0] is an echo back of the command (see microcontroller firmware).
+                //INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).  
+                if (inbuffer[0] == 0x34)
                 {
-                    //INBuffer[0] is an echo back of the command (see microcontroller firmware).
-                    //INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).  
-                    if (inbuffer[0] == 0x34)
+                    if (inbuffer[1] != 0x00)
                     {
-                        if (inbuffer[1] != 0x00)
-                        {
-                            // NG
-                            error_flag = true;
-                        }
+                        // NG
+                        error_flag = true;
                     }
                 }
-                else
-                {
-                    // NG
-                    error_flag = true;
-                }
+            }
+            else
+            {
+                // NG
+                error_flag = true;
             }
         }
-        else
-        {
-            // NG
-            error_flag = true;
-        }
+    }
+    else
+    {
+        // NG
+        error_flag = true;
+    }
 } // end of while
 
 // データ送信要求セット
