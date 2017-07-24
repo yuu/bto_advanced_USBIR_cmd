@@ -108,18 +108,8 @@ if(libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5
 
 //INBuffer[0] is an echo back of the command (see microcontroller firmware).
 //INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).  
-if (inbuffer[0] == 0x35)
-{
-    if (inbuffer[1] == 0x00)
-    {   // OK
-        i_ret = 0;
-    }
-    else
-    {
-        // NG
-        error_flag = true;
-    }
-}
+if (inbuffer[0] == 0x35 && inbuffer[1] == 0x00)
+    i_ret = 0;
 
 return i_ret;
 }
