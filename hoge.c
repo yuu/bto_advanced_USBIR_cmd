@@ -63,7 +63,7 @@ while (true)
         outbuffer[6 + (fi * 4) + 3] = data[(send_bit_pos * 4) + 3];
         send_bit_pos++;
     }
-    if(libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE ,&BytesWritten, 5000) == 0)
+    if(libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE ,&BytesWritten, 5000) != 0)
     {
         error_flag = true;
         break;
