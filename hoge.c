@@ -49,8 +49,9 @@ while (true)
     }
     outbuffer[5] = (byte)(set_bit_size & 0xFF);
 
-    if (set_bit_size > 0)
-    {
+    if (set_bit_size < 1)
+        break;
+
         // データセット
         // 赤外線コードコピー
         for (fi = 0; fi < set_bit_size; fi++)
@@ -93,11 +94,6 @@ while (true)
             // NG
             error_flag = true;
         }
-    }
-    else
-    {   // 送信データなし
-        break;
-    }
 } // end of while
 
 // データ送信要求セット
