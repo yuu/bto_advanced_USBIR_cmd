@@ -17,12 +17,14 @@ uint set_bit_size = 0;
 send_bit_num = data_count / 4 + (data_count % 4)/2; // 送信ビット数　リーダーコード + コード + 終了コード
 
 // パラメータチェック
-if (devh != NULL &&
-	IR_FREQ_MIN <= freq &&
-	freq <= IR_FREQ_MAX &&
-	0 < send_bit_num &&
-	send_bit_num <= (IR_SEND_DATA_MAX_LEN * 8))
-    {
+if (devh == NULL &&
+	freq < IR_FREQ_MIN &&
+	IR_FREQ_MAX < freq &&
+	send_bit_num < 1 &&
+	(IR_SEND_DATA_MAX_LEN * 8) < send_bit_num)
+{
+	return -1;
+}
         // データセット
         while (true)
         {
@@ -95,7 +97,7 @@ if (devh != NULL &&
             {   // 送信データなし
                 break;
             }
-        }
+        } // end of while
 
         // データ送信要求セット
         if (error_flag == false)
@@ -146,10 +148,6 @@ if (devh != NULL &&
         {   // データセットエラー
             i_ret = -3;
         }
-    }
-    else
-    {   // パラメータエラー
-        i_ret = -2;
-    }
+
 return i_ret;
 }
