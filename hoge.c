@@ -66,27 +66,18 @@ while (true)
     }
     if(libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE ,&BytesWritten, 5000) == 0)
     {
-
         //Now get the response packet from the firmware.
+        if(libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) == 0)
         {
-            if(libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) == 0)
-            {
-                //INBuffer[0] is an echo back of the command (see microcontroller firmware).
-                //INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).  
-                if (inbuffer[0] == 0x34)
-                {
-                    if (inbuffer[1] != 0x00)
-                    {
-                        // NG
-                        error_flag = true;
-                    }
-                }
-            }
-            else
-            {
-                // NG
-                error_flag = true;
-            }
+            //INBuffer[0] is an echo back of the command (see microcontroller firmware).
+            //INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).  
+            if (inbuffer[0] == 0x34 && inbuffer[1] != 0x00)
+                error_flag = true; // NG
+        }
+        else
+        {
+            // NG
+            error_flag = true;
         }
     }
     else
