@@ -1,7 +1,7 @@
 PROG    = bto_advanced_USBIR_cmd
 LOCAL_BIN_DIR = /usr/local/bin
 CC      = cc
-OBJS    = ${PROG}.o
+OBJS    = ${PROG}.o hoge.o
 
 ${PROG}: $(OBJS)
 	$(CC) -Wall -o $@ $(OBJS) -lusb-1.0 

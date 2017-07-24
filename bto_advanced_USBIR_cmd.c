@@ -34,47 +34,9 @@ $ bto_advanced_USBIR_cmd --Plarail_Speed_UpAF
 #include <libusb-1.0/libusb.h>
 #include <getopt.h>
 
+#include "hoge.h"
+
 #define APP_VERSION "1.0.0"
-
-#define VENDOR_ID  0x22ea
-#define PRODUCT_ID 0x003a
-#define BTO_EP_IN  0x84
-#define BTO_EP_OUT 0x04
-
-typedef unsigned char byte;
-typedef unsigned int uint;
-typedef unsigned short ushort;
-typedef unsigned char bool;
-#define true	1
-#define false	0
-
-#define BUFF_SIZE 64
-#define FORMAT_NUM 4
-#define OPTION_NUM 10
-
-#define IR_FREQ_MIN						25000	// 赤外線周波数設定最小値 25KHz
-#define IR_FREQ_MAX						50000	// 赤外線周波数設定最大値 50KHz
-#define IR_SEND_DATA_USB_SEND_MAX_LEN	14		// USB送信１回で送信する最大ビット数
-#define IR_SEND_DATA_MAX_LEN			300		// 赤外線送信データ設定最大長[byte]
-
-#define IR_FREQ_DEFAULT					38000
-static uint frequency = IR_FREQ_DEFAULT;
-
-#define MAX_BYTE_ARRAY_SIZE				9600
-
-#define FORMAT_AEHA_READER_CODE			0x007B003D	// 家電協 Reader Code ON:3.2ms/26us=123(0x7B), OFF:1.6ms/26us=61(0x3D)
-#define FORMAT_AEHA_BIT_OFF				0x000F000F	// 家電協 BitOFF ON:0.4ms/26us=15(0x0F), OFF:0.4ms/26us=15(0x0F)
-#define FORMAT_AEHA_BIT_ON				0x000F002E	// 家電協 BitON  ON:0.4ms/26us=15(0x0F), OFF:1.2ms/26us=46(0x2E)
-#define FORMAT_NEC_READER_CODE			0x015A00AD	// NEC Reader Code ON:9.0ms/26us=346(0x15A), OFF:4.5ms/26us=173(0xAD)
-#define FORMAT_NEC_BIT_OFF				0x00160016	// NEC BitOFF ON:0.56ms/26us=22(0x16), OFF:0.56ms/26us=22(0x16)
-#define FORMAT_NEC_BIT_ON				0x00160041	// NEC BitON  ON:0.56ms/26us=22(0x16), OFF:1.68ms/26us=65(0x41)
-#define FORMAT_SONY_READER_CODE			0x005C0017	// SONY Reader Code ON:2.4ms/26us=92(0x5C), OFF:0.6ms/26us=23(0x17)
-#define FORMAT_SONY_BIT_OFF				0x00170017	// SONY BitOFF ON:0.6ms/26us=23(0x17), OFF:0.6ms/26us=23(0x17)
-#define FORMAT_SONY_BIT_ON				0x002E0017	// SONY BitON  ON:1.2ms/26us=46(0x2E), OFF:0.6ms/26us=23(0x17)
-#define FORMAT_MITSU_READER_CODE		0x00000000	// MITSUBISHI Reader Code なし
-#define FORMAT_MITSU_BIT_OFF			0x000F001F	// MITSUBISHI BitOFF ON:0.4ms/26us=15(0x0F), OFF:0.8ms/26us=31(0x1F)
-#define FORMAT_MITSU_BIT_ON				0x000F004D	// MITSUBISHI BitON  ON:0.4ms/26us=15(0x0F), OFF:2.0ms/26us=77(0x4D)
-#define FORMAT_STOP_CODE				0x00170619	// STOP CODE
 
 enum
 {
@@ -130,7 +92,6 @@ void usage(char *fname);
 void version(char *fname);
 int writeUSBIR(struct libusb_device_handle *devh, uint format_type, byte code[], int code_len);
 int writeUSBIRCode(struct libusb_device_handle *devh, uint freq, uint reader_code, uint bit_0, uint bit_1, uint stop_code, byte code[], uint bit_len);
-int writeUSBIRData(struct libusb_device_handle *devh, uint freq, byte data[], uint bit_len, uint data_count);
 int writeUSBIRData_Ushort(struct libusb_device_handle *devh, uint freq, ushort data[], uint bit_len, uint ele_num);
 int writeUSBIR_Plarail_Stop(struct libusb_device_handle *devh, uint band);
 int writeUSBIR_Plarail_Speed_Up(struct libusb_device_handle *devh, uint band, uint dir);
@@ -843,161 +804,6 @@ else
 {   // パラメータエラー
     i_ret = -2;
 }
-return i_ret;
-}
-
-
-int writeUSBIRData(struct libusb_device_handle *devh, uint freq, byte data[], uint bit_len, uint data_count)
-{
-uint fi;
-int i_ret = -1;
-byte outbuffer[BUFF_SIZE];
-byte inbuffer[BUFF_SIZE];
-int BytesWritten = 0;
-int BytesRead = 0;
-bool error_flag = false;
-uint send_bit_num = 0;
-uint send_bit_pos = 0;                  // 送信セット済みビット位置
-uint set_bit_size = 0;
-
-// ↓元にしたソース:USBIR.csから独自に拡張した箇所。data_count/2が奇数の場合に対応。引数bit_lenは使用しない。代わりに追加した引数data_countを使う。
-send_bit_num = data_count / 4 + (data_count % 4)/2; // 送信ビット数　リーダーコード + コード + 終了コード
-
-// パラメータチェック
-if (devh != NULL &&
-	IR_FREQ_MIN <= freq &&
-	freq <= IR_FREQ_MAX &&
-	0 < send_bit_num &&
-	send_bit_num <= (IR_SEND_DATA_MAX_LEN * 8))
-    {
-        // データセット
-        while (true)
-        {
-            outbuffer[0] = 0x34;
-            //送信総ビット数
-            outbuffer[1] = (byte)((send_bit_num >> 8) & 0xFF);
-            outbuffer[2] = (byte)(send_bit_num & 0xFF);
-            outbuffer[3] = (byte)((send_bit_pos >> 8) & 0xFF);
-            outbuffer[4] = (byte)(send_bit_pos & 0xFF);
-            if (send_bit_num > send_bit_pos)
-            {
-                set_bit_size = send_bit_num - send_bit_pos;
-                if (set_bit_size > IR_SEND_DATA_USB_SEND_MAX_LEN)
-                {
-                    set_bit_size = IR_SEND_DATA_USB_SEND_MAX_LEN;
-                }
-            }
-            else
-            {   // 送信データなし
-                set_bit_size = 0;
-            }
-            outbuffer[5] = (byte)(set_bit_size & 0xFF);
-
-            if (set_bit_size > 0)
-            {
-                // データセット
-                // 赤外線コードコピー
-                for (fi = 0; fi < set_bit_size; fi++)
-                {
-                    // ON Count
-                    outbuffer[6 + (fi * 4)] = data[send_bit_pos * 4];
-                    outbuffer[6 + (fi * 4) + 1] = data[(send_bit_pos * 4) + 1];
-                    // OFF Count
-                    outbuffer[6 + (fi * 4) + 2] = data[(send_bit_pos * 4) + 2];
-                    outbuffer[6 + (fi * 4) + 3] = data[(send_bit_pos * 4) + 3];
-                    send_bit_pos++;
-                }
-                if(libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE ,&BytesWritten, 5000) == 0)
-                {
-
-                    //Now get the response packet from the firmware.
-                    {
-                        if(libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) == 0)
-                        {
-                            //INBuffer[0] is an echo back of the command (see microcontroller firmware).
-                            //INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).  
-                            if (inbuffer[0] == 0x34)
-                            {
-                                if (inbuffer[1] != 0x00)
-                                {
-                                    // NG
-                                    error_flag = true;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // NG
-                            error_flag = true;
-                        }
-                    }
-                }
-                else
-                {
-                    // NG
-                    error_flag = true;
-                }
-            }
-            else
-            {   // 送信データなし
-                break;
-            }
-        }
-
-        // データ送信要求セット
-        if (error_flag == false)
-        {
-            outbuffer[0] = 0x35;		//0x81 is the "Get Pushbutton State" command in the firmware
-            outbuffer[1] = (byte)((freq >> 8) & 0xFF);
-            outbuffer[2] = (byte)(freq & 0xFF);
-            outbuffer[3] = (byte)((send_bit_num >> 8) & 0xFF);
-            outbuffer[4] = (byte)(send_bit_num & 0xFF);
-            BytesRead = 0;
-
-            //To get the pushbutton state, first, we send a packet with our "Get Pushbutton State" command in it.
-            if(libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE ,&BytesWritten, 5000) == 0)
-            {
-                //Now get the response packet from the firmware.
-                {
-                    if(libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) == 0)
-                    {
-                        //INBuffer[0] is an echo back of the command (see microcontroller firmware).
-                        //INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).  
-                        if (inbuffer[0] == 0x35)
-                        {
-                            if (inbuffer[1] == 0x00)
-                            {   // OK
-                                i_ret = 0;
-                            }
-                            else
-                            {
-                                // NG
-                                error_flag = true;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // NG
-                        i_ret = -5;
-                    }
-                }
-            }
-            else
-            {
-                // NG
-                i_ret = -4;
-            }
-        }
-        else
-        {   // データセットエラー
-            i_ret = -3;
-        }
-    }
-    else
-    {   // パラメータエラー
-        i_ret = -2;
-    }
 return i_ret;
 }
 
