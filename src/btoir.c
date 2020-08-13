@@ -31,7 +31,7 @@ $ bto_advanced_USBIR_cmd --Plarail_Speed_UpAF
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
-#include <libusb-1.0/libusb.h>
+#include <libusb.h>
 #include <getopt.h>
 
 #define APP_VERSION "1.0.0"
