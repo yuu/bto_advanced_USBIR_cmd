@@ -132,7 +132,8 @@ libusb_device_handle *open_device(libusb_context *ctx) {
     return devh;
 }
 
-int writeUSBIR(struct libusb_device_handle *devh, uint format_type, byte code[], int code_len) {
+int writeUSBIR(struct btoir *bto, uint format_type, byte code[], int code_len) {
+    struct libusb_device_handle *devh = bto->dev_handle;
     uint reader_code = 0, bit_0 = 0, bit_1 = 0, stop_code = FORMAT_STOP_CODE;
     int i_ret = -1;
 
@@ -166,7 +167,7 @@ int writeUSBIR(struct libusb_device_handle *devh, uint format_type, byte code[],
         default:
             break;
         }
-        if (writeUSBIRCode(devh, IR_FREQ_DEFAULT, reader_code, bit_0, bit_1, stop_code, code, (uint)code_len) == 0) {
+        if (writeUSBIRCode(bto, IR_FREQ_DEFAULT, reader_code, bit_0, bit_1, stop_code, code, (uint)code_len) == 0) {
             i_ret = 0;
         } else {
             i_ret = -3;
@@ -177,8 +178,9 @@ int writeUSBIR(struct libusb_device_handle *devh, uint format_type, byte code[],
     return i_ret;
 }
 
-int writeUSBIRCode(struct libusb_device_handle *devh, uint freq, uint reader_code, uint bit_0, uint bit_1,
+int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint bit_0, uint bit_1,
                    uint stop_code, byte code[], uint bit_len) {
+    struct libusb_device_handle *devh = bto->dev_handle;
     uint fi;
     int byte_pos, bit_pos, bit_mask, tmp_data;
     int i_ret = -1;
@@ -323,7 +325,8 @@ int writeUSBIRCode(struct libusb_device_handle *devh, uint freq, uint reader_cod
     return i_ret;
 }
 
-int writeUSBIRData(struct libusb_device_handle *devh, uint freq, byte data[], uint bit_len, uint data_count) {
+int writeUSBIRData(struct btoir *bto, uint freq, byte data[], uint bit_len, uint data_count) {
+    struct libusb_device_handle *devh = bto->dev_handle;
     uint fi;
     int i_ret = -1;
     byte outbuffer[BUFF_SIZE];
@@ -436,7 +439,8 @@ int writeUSBIRData(struct libusb_device_handle *devh, uint freq, byte data[], ui
     return i_ret;
 }
 
-int writeUSBIRData_Ushort(struct libusb_device_handle *devh, uint freq, ushort udata[], uint bit_len, uint ele_num) {
+int writeUSBIRData_Ushort(struct btoir *bto, uint freq, ushort udata[], uint bit_len, uint ele_num) {
+    struct libusb_device_handle *devh = bto->dev_handle;
     int fi, ji;
     uint dataCount = bit_len * 4;
     byte *data = malloc(dataCount);
@@ -452,10 +456,11 @@ int writeUSBIRData_Ushort(struct libusb_device_handle *devh, uint freq, ushort u
             data[fi] = (udata[ji] >> 8) & 0xFF;
     }
 
-    return writeUSBIRData(devh, freq, data, bit_len, dataCount);
+    return writeUSBIRData(bto, freq, data, bit_len, dataCount);
 }
 
-int writeUSBIR_Plarail_Stop(struct libusb_device_handle *devh, uint band) {
+int writeUSBIR_Plarail_Stop(struct btoir *bto, uint band) {
+    struct libusb_device_handle *devh = bto->dev_handle;
     int i_ret = -1;
     bool b_err = false;
     ushort *code = NULL;  // 送信データ
@@ -476,7 +481,7 @@ int writeUSBIR_Plarail_Stop(struct libusb_device_handle *devh, uint band) {
 
     if (b_err == false) {
         // USB DEVICEへ送信 パラメータ[USB DEVICEハンドル、周波数、送信赤外線コード、赤外線コードのビット長、要素数]
-        i_ret = writeUSBIRData_Ushort(devh, IR_FREQ_DEFAULT, code, 16, 32);
+        i_ret = writeUSBIRData_Ushort(bto, IR_FREQ_DEFAULT, code, 16, 32);
         if (i_ret != 0) {
             i_ret = 3;
         }
@@ -484,7 +489,8 @@ int writeUSBIR_Plarail_Stop(struct libusb_device_handle *devh, uint band) {
     return i_ret;
 }
 
-int writeUSBIR_Plarail_Speed_Up(struct libusb_device_handle *devh, uint band, uint dir) {
+int writeUSBIR_Plarail_Speed_Up(struct btoir *bto, uint band, uint dir) {
+    struct libusb_device_handle *devh = bto->dev_handle;
     int i_ret = -1;
     bool b_err = false;
     // 送信データ ON時間とOFF時間の組み合わせ
@@ -527,7 +533,7 @@ int writeUSBIR_Plarail_Speed_Up(struct libusb_device_handle *devh, uint band, ui
 
     if (b_err == false) {
         // USB DEVICEへ送信 パラメータ[USB DEVICEハンドル、周波数、送信赤外線コード、赤外線コードのビット長、要素数]
-        i_ret = writeUSBIRData_Ushort(devh, IR_FREQ_DEFAULT, code, 16, 32);
+        i_ret = writeUSBIRData_Ushort(bto, IR_FREQ_DEFAULT, code, 16, 32);
         if (i_ret != 0) {
             i_ret = 4;
         }
@@ -535,7 +541,8 @@ int writeUSBIR_Plarail_Speed_Up(struct libusb_device_handle *devh, uint band, ui
     return i_ret;
 }
 
-int writeUSBIR_Plarail_Speed_Down(struct libusb_device_handle *devh, uint band) {
+int writeUSBIR_Plarail_Speed_Down(struct btoir *bto, uint band) {
+    struct libusb_device_handle *devh = bto->dev_handle;
     int i_ret = -1;
     bool b_err = false;
     // 送信データ ON時間とOFF時間の組み合わせ
@@ -584,7 +591,7 @@ int writeUSBIR_Plarail_Speed_Down(struct libusb_device_handle *devh, uint band) 
 
     if (b_err == false) {
         // USB DEVICEへ送信 パラメータ[USB DEVICEハンドル、周波数、送信赤外線コード、赤外線コードのビット長、要素数]
-        i_ret = writeUSBIRData_Ushort(devh, IR_FREQ_DEFAULT, code, 16, 32);
+        i_ret = writeUSBIRData_Ushort(bto, IR_FREQ_DEFAULT, code, 16, 32);
         if (i_ret != 0) {
             i_ret = 3;
         }
@@ -592,7 +599,8 @@ int writeUSBIR_Plarail_Speed_Down(struct libusb_device_handle *devh, uint band) 
     return i_ret;
 }
 
-int recUSBIRData_Start(struct libusb_device_handle *devh, uint freq) {
+int recUSBIRData_Start(struct btoir *bto, uint freq) {
+    struct libusb_device_handle *devh = bto->dev_handle;
     int i_ret = -1;
     byte outbuffer[BUFF_SIZE];
     byte inbuffer[BUFF_SIZE];
@@ -640,7 +648,8 @@ int recUSBIRData_Start(struct libusb_device_handle *devh, uint freq) {
     return i_ret;
 }
 
-int recUSBIRData_Stop(struct libusb_device_handle *devh) {
+int recUSBIRData_Stop(struct btoir *bto) {
+    struct libusb_device_handle *devh = bto->dev_handle;
     int i_ret = -1;
     byte outbuffer[BUFF_SIZE];
     byte inbuffer[BUFF_SIZE];
@@ -674,7 +683,8 @@ int recUSBIRData_Stop(struct libusb_device_handle *devh) {
     return i_ret;
 }
 
-int readUSBIRData(struct libusb_device_handle *devh, byte data[], uint data_buff_len, uint *bit_len) {
+int readUSBIRData(struct btoir *bto, byte data[], uint data_buff_len, uint *bit_len) {
+    struct libusb_device_handle *devh = bto->dev_handle;
     uint fi;
     int i_ret = -1;
     byte outbuffer[BUFF_SIZE];

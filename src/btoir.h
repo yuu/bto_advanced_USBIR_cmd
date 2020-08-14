@@ -101,16 +101,16 @@ static char FORMATlist[FORMAT_NUM][11] =
 
 void close_device(libusb_context *ctx, libusb_device_handle *devh);
 libusb_device_handle* open_device(libusb_context *ctx);
-int writeUSBIR(struct libusb_device_handle *devh, uint format_type, byte code[], int code_len);
-int writeUSBIRCode(struct libusb_device_handle *devh, uint freq, uint reader_code, uint bit_0, uint bit_1, uint stop_code, byte code[], uint bit_len);
-int writeUSBIRData(struct libusb_device_handle *devh, uint freq, byte data[], uint bit_len, uint data_count);
-int writeUSBIRData_Ushort(struct libusb_device_handle *devh, uint freq, ushort data[], uint bit_len, uint ele_num);
-int writeUSBIR_Plarail_Stop(struct libusb_device_handle *devh, uint band);
-int writeUSBIR_Plarail_Speed_Up(struct libusb_device_handle *devh, uint band, uint dir);
-int writeUSBIR_Plarail_Speed_Down(struct libusb_device_handle *devh, uint band);
-int recUSBIRData_Start(struct libusb_device_handle *devh, uint freq);
-int recUSBIRData_Stop(struct libusb_device_handle *devh);
-int readUSBIRData(struct libusb_device_handle *devh, byte data[], uint data_buff_len, uint *bit_len);
+int writeUSBIR(struct btoir *bto, uint format_type, byte code[], int code_len);
+int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint bit_0, uint bit_1, uint stop_code, byte code[], uint bit_len);
+int writeUSBIRData(struct btoir *bto, uint freq, byte data[], uint bit_len, uint data_count);
+int writeUSBIRData_Ushort(struct btoir *bto, uint freq, ushort data[], uint bit_len, uint ele_num);
+int writeUSBIR_Plarail_Stop(struct btoir *bto, uint band);
+int writeUSBIR_Plarail_Speed_Up(struct btoir *bto, uint band, uint dir);
+int writeUSBIR_Plarail_Speed_Down(struct btoir *bto, uint band);
+int recUSBIRData_Start(struct btoir *bto, uint freq);
+int recUSBIRData_Stop(struct btoir *bto);
+int readUSBIRData(struct btoir *bto, byte data[], uint data_buff_len, uint *bit_len);
 
 #ifdef __cplusplus
 }

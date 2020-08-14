@@ -269,28 +269,27 @@ int main(int argc, char *argv[]) {
     }
 
     btoir *bto = bto_open();
-    libusb_device_handle *devh = bto->dev_handle;
 
     if (data_flag) {
-        if ((ret = writeUSBIRData(devh, frequency, data, dataCount / 4, dataCount)) < 0)
+        if ((ret = writeUSBIRData(bto, frequency, data, dataCount / 4, dataCount)) < 0)
             fprintf(stderr, "error %d\n", ret);
     } else if (code_flag || Code_flag) {
-        if ((ret = writeUSBIR(devh, typeindex, code, codeCount * 8)) < 0)
+        if ((ret = writeUSBIR(bto, typeindex, code, codeCount * 8)) < 0)
             fprintf(stderr, "error %d\n", ret);
     } else if (read_flag) {
-        if ((ret = recUSBIRData_Start(devh, frequency)) < 0)
+        if ((ret = recUSBIRData_Start(bto, frequency)) < 0)
             fprintf(stderr, "error %d\n", ret);
         else
             fprintf(stdout, "受信を開始しました。\n");
     } else if (stop_flag) {
-        if ((ret = recUSBIRData_Stop(devh)) < 0)
+        if ((ret = recUSBIRData_Stop(bto)) < 0)
             fprintf(stderr, "error %d\n", ret);
         else
             fprintf(stdout, "受信を停止しました。\n");
     } else if (get_flag) {
         data = new byte[MAX_BYTE_ARRAY_SIZE];
 
-        if ((ret = readUSBIRData(devh, data, MAX_BYTE_ARRAY_SIZE, &ibit_len)) < 0)
+        if ((ret = readUSBIRData(bto, data, MAX_BYTE_ARRAY_SIZE, &ibit_len)) < 0)
             fprintf(stderr, "error %d\n", ret);
         else {
             fprintf(stderr, "取得したbyte配列の要素数:%d\n", ibit_len * 4);
@@ -303,35 +302,35 @@ int main(int argc, char *argv[]) {
     } else if (pla_flag) {
         switch (plaindex) {
         case Plarail_StopA:
-            if ((ret = writeUSBIR_Plarail_Stop(devh, PLARAIL_BAND_BAND_A)) < 0)
+            if ((ret = writeUSBIR_Plarail_Stop(bto, PLARAIL_BAND_BAND_A)) < 0)
                 fprintf(stderr, "error %d\n", ret);
             break;
         case Plarail_StopB:
-            if ((ret = writeUSBIR_Plarail_Stop(devh, PLARAIL_BAND_BAND_B)) < 0)
+            if ((ret = writeUSBIR_Plarail_Stop(bto, PLARAIL_BAND_BAND_B)) < 0)
                 fprintf(stderr, "error %d\n", ret);
             break;
         case Plarail_Speed_UpAF:
-            if ((ret = writeUSBIR_Plarail_Speed_Up(devh, PLARAIL_BAND_BAND_A, PLARAIL_DIRECTION_FORWARD)) < 0)
+            if ((ret = writeUSBIR_Plarail_Speed_Up(bto, PLARAIL_BAND_BAND_A, PLARAIL_DIRECTION_FORWARD)) < 0)
                 fprintf(stderr, "error %d\n", ret);
             break;
         case Plarail_Speed_UpAB:
-            if ((ret = writeUSBIR_Plarail_Speed_Up(devh, PLARAIL_BAND_BAND_A, PLARAIL_DIRECTION_BACKWARD)) < 0)
+            if ((ret = writeUSBIR_Plarail_Speed_Up(bto, PLARAIL_BAND_BAND_A, PLARAIL_DIRECTION_BACKWARD)) < 0)
                 fprintf(stderr, "error %d\n", ret);
             break;
         case Plarail_Speed_UpBF:
-            if ((ret = writeUSBIR_Plarail_Speed_Up(devh, PLARAIL_BAND_BAND_B, PLARAIL_DIRECTION_FORWARD)) < 0)
+            if ((ret = writeUSBIR_Plarail_Speed_Up(bto, PLARAIL_BAND_BAND_B, PLARAIL_DIRECTION_FORWARD)) < 0)
                 fprintf(stderr, "error %d\n", ret);
             break;
         case Plarail_Speed_UpBB:
-            if ((ret = writeUSBIR_Plarail_Speed_Up(devh, PLARAIL_BAND_BAND_B, PLARAIL_DIRECTION_BACKWARD)) < 0)
+            if ((ret = writeUSBIR_Plarail_Speed_Up(bto, PLARAIL_BAND_BAND_B, PLARAIL_DIRECTION_BACKWARD)) < 0)
                 fprintf(stderr, "error %d\n", ret);
             break;
         case Plarail_Speed_DownA:
-            if ((ret = writeUSBIR_Plarail_Speed_Down(devh, PLARAIL_BAND_BAND_A)) < 0)
+            if ((ret = writeUSBIR_Plarail_Speed_Down(bto, PLARAIL_BAND_BAND_A)) < 0)
                 fprintf(stderr, "error %d\n", ret);
             break;
         case Plarail_Speed_DownB:
-            if ((ret = writeUSBIR_Plarail_Speed_Down(devh, PLARAIL_BAND_BAND_B)) < 0)
+            if ((ret = writeUSBIR_Plarail_Speed_Down(bto, PLARAIL_BAND_BAND_B)) < 0)
                 fprintf(stderr, "error %d\n", ret);
             break;
         default:
