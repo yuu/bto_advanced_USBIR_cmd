@@ -270,7 +270,7 @@ int main(int argc, char *argv[]) {
     btoir *bto = bto_open();
 
     if (data_flag) {
-        if ((ret = writeUSBIRData(bto, frequency, data, dataCount / 4, dataCount)) < 0)
+        if ((ret = writeUSBIRData(bto, frequency, data, dataCount)) < 0)
             fprintf(stderr, "error %d\n", ret);
     } else if (code_flag || Code_flag) {
         if ((ret = writeUSBIR(bto, typeindex, code, codeCount * 8)) < 0)

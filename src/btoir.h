@@ -95,7 +95,7 @@ static char FORMATlist[FORMAT_NUM][11] =
 
 int writeUSBIR(struct btoir *bto, uint format_type, byte code[], int code_len);
 int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint bit_0, uint bit_1, uint stop_code, byte code[], uint bit_len);
-int writeUSBIRData(struct btoir *bto, uint freq, byte data[], uint bit_len, uint data_count);
+int writeUSBIRData(struct btoir *bto, uint freq, byte data[], uint data_count);
 int writeUSBIRData_Ushort(struct btoir *bto, uint freq, ushort data[], uint bit_len, uint ele_num);
 int writeUSBIR_Plarail_Stop(struct btoir *bto, uint band);
 int writeUSBIR_Plarail_Speed_Up(struct btoir *bto, uint band, uint dir);

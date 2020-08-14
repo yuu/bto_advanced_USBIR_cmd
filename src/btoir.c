@@ -83,8 +83,6 @@ libusb_device_handle *open_device(libusb_context *ctx) {
     int i = 0;
     int cnt = 0;
 
-    libusb_set_debug(ctx, 3);
-
     if ((libusb_get_device_list(ctx, &devs)) < 0) {
         perror("no usb device found");
         return NULL;
@@ -114,7 +112,7 @@ libusb_device_handle *open_device(libusb_context *ctx) {
     }
 
     /* open device */
-    if ((devh = libusb_open_device_with_vid_pid(ctx, VENDOR_ID, PRODUCT_ID)) < 0) {
+    if ((devh = libusb_open_device_with_vid_pid(ctx, VENDOR_ID, PRODUCT_ID)) == NULL) {
         perror("can't find device\n");
         close_device(ctx, devh);
         return NULL;
@@ -333,7 +331,7 @@ int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint bit_0, u
     return i_ret;
 }
 
-int writeUSBIRData(struct btoir *bto, uint freq, byte data[], uint bit_len, uint data_count) {
+int writeUSBIRData(struct btoir *bto, uint freq, byte data[], uint data_count) {
     struct libusb_device_handle *devh = bto->dev_handle;
     uint fi;
     int i_ret = -1;
@@ -448,8 +446,8 @@ int writeUSBIRData(struct btoir *bto, uint freq, byte data[], uint bit_len, uint
 }
 
 int writeUSBIRData_Ushort(struct btoir *bto, uint freq, ushort udata[], uint bit_len, uint ele_num) {
-    struct libusb_device_handle *devh = bto->dev_handle;
-    int fi, ji;
+    uint fi;
+    int ji;
     uint dataCount = bit_len * 4;
     byte *data = malloc(dataCount);
     memset(data, 0x00, dataCount);
@@ -464,11 +462,10 @@ int writeUSBIRData_Ushort(struct btoir *bto, uint freq, ushort udata[], uint bit
             data[fi] = (udata[ji] >> 8) & 0xFF;
     }
 
-    return writeUSBIRData(bto, freq, data, bit_len, dataCount);
+    return writeUSBIRData(bto, freq, data, dataCount);
 }
 
 int writeUSBIR_Plarail_Stop(struct btoir *bto, uint band) {
-    struct libusb_device_handle *devh = bto->dev_handle;
     int i_ret = -1;
     bool b_err = false;
     ushort *code = NULL;  // 送信データ
@@ -498,7 +495,6 @@ int writeUSBIR_Plarail_Stop(struct btoir *bto, uint band) {
 }
 
 int writeUSBIR_Plarail_Speed_Up(struct btoir *bto, uint band, uint dir) {
-    struct libusb_device_handle *devh = bto->dev_handle;
     int i_ret = -1;
     bool b_err = false;
     // 送信データ ON時間とOFF時間の組み合わせ
@@ -550,7 +546,6 @@ int writeUSBIR_Plarail_Speed_Up(struct btoir *bto, uint band, uint dir) {
 }
 
 int writeUSBIR_Plarail_Speed_Down(struct btoir *bto, uint band) {
-    struct libusb_device_handle *devh = bto->dev_handle;
     int i_ret = -1;
     bool b_err = false;
     // 送信データ ON時間とOFF時間の組み合わせ
