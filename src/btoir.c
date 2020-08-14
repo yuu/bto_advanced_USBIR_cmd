@@ -36,6 +36,31 @@ $ bto_advanced_USBIR_cmd --Plarail_Speed_UpAF
 
 #include "btoir.h"
 
+struct btoir *bto_open() {
+    struct libusb_context *ctx = NULL;
+    const int ret = libusb_init(&ctx);
+    if (ret < 0) {
+        perror("libusb_init\n");
+        return NULL;
+    }
+
+    struct libusb_device_handle *dev_handle = open_device(ctx);
+    if (dev_handle == NULL) {
+        return NULL;
+    }
+
+    struct btoir *bto = malloc(sizeof(struct btoir));
+    bto->ctx = ctx;
+    bto->dev_handle = dev_handle;
+
+    return bto;
+}
+
+void bto_close(struct btoir *bto) {
+    close_device(bto->ctx, bto->dev_handle);
+    free(bto);
+}
+
 void close_device(libusb_context *ctx, libusb_device_handle *devh) {
     libusb_close(devh);
     libusb_exit(ctx);
@@ -54,7 +79,7 @@ libusb_device_handle *open_device(libusb_context *ctx) {
 
     if ((libusb_get_device_list(ctx, &devs)) < 0) {
         perror("no usb device found");
-        exit(1);
+        return NULL;
     }
 
     /* check every usb devices */
@@ -72,19 +97,19 @@ libusb_device_handle *open_device(libusb_context *ctx) {
     /* device not found */
     if (cnt == 0) {
         fprintf(stderr, "device not connected\n");
-        exit(1);
+        return NULL;
     }
 
     if (cnt > 1) {
         fprintf(stderr, "multi device is not implemented yet\n");
-        exit(1);
+        return NULL;
     }
 
     /* open device */
     if ((devh = libusb_open_device_with_vid_pid(ctx, VENDOR_ID, PRODUCT_ID)) < 0) {
         perror("can't find device\n");
         close_device(ctx, devh);
-        exit(1);
+        return NULL;
     }
 
     /* detach kernel driver if attached. */
@@ -94,14 +119,14 @@ libusb_device_handle *open_device(libusb_context *ctx) {
         r = libusb_detach_kernel_driver(devh, 3);
         if (r != 0) {
             perror("detaching kernel driver failed");
-            exit(1);
+            return NULL;
         }
     }
 
     r = libusb_claim_interface(devh, 3);
     if (r < 0) {
         fprintf(stderr, "claim interface failed (%d): %s\n", r, strerror(errno));
-        exit(1);
+        return NULL;
     }
 
     return devh;

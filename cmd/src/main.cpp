@@ -93,7 +93,6 @@ void version(char *fname) {
 }
 
 int main(int argc, char *argv[]) {
-    libusb_context *ctx = NULL;
     int ret = 1;
     struct option *options;
     int option_index;
@@ -269,15 +268,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    /* libusb initialize*/
-    ret = libusb_init(&ctx);
-    if (ret < 0) {
-        perror("libusb_init\n");
-        exit(1);
-    }
-
-    /* open device */
-    libusb_device_handle *devh = open_device(ctx);
+    btoir *bto = bto_open();
+    libusb_device_handle *devh = bto->dev_handle;
 
     if (data_flag) {
         if ((ret = writeUSBIRData(devh, frequency, data, dataCount / 4, dataCount)) < 0)
@@ -347,7 +339,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    /* close device */
-    close_device(ctx, devh);
+    bto_close(bto);
+
     return ret;
 }
