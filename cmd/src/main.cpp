@@ -123,10 +123,8 @@ void version(char *fname) {
 int main(int argc, char *argv[]) {
     int freq_flag = 0;
     int type_flag = 0;
-    char type_arg[20] = "\0";
     int code_flag = 0;
     int Code_flag = 0;
-    char Code_arg[600] = "\0";
     int str_len = 0;
     int data_flag = 0;
     int pla_flag = 0;
@@ -139,6 +137,7 @@ int main(int argc, char *argv[]) {
     uint codeCount = 0;
     char *endPtr;
     int placounter = 0, plaindex;
+    IR_FORMAT typeindex = IR_FORMAT_INVALID;
 
     {
         auto optionss = setup_optargs();
@@ -185,18 +184,40 @@ int main(int argc, char *argv[]) {
                 }
                 break;
             }
-            case 'C':
+            case 'C': {
                 Code_flag = 1;
-                strcpy(Code_arg, optarg);
+                str_len = strlen(optarg);
+                char hex_buff[5] = "\0";
+                for (auto fi = 0; fi < str_len / 2; fi++) {
+                    strcpy(hex_buff, "0x");
+                    strncat(hex_buff, &optarg[fi * 2], 2);
+
+                    if (code != NULL) {
+                        delete code;
+                        code = new byte[codeCount + 1];
+                    } else {
+                        code = new byte[codeCount + 1];
+                    }
+                    code[codeCount++] = (byte)strtol(hex_buff, &endPtr, 0);
+                }
                 break;
+            }
             case 'f':
                 freq_flag = 1;
                 frequency = atoi(optarg);
                 break;
-            case 't':
+            case 't': {
                 type_flag = 1;
-                strcpy(type_arg, optarg);
+                const auto ret =
+                    std::find_if(std::begin(FORMATlist), std::end(FORMATlist),
+                                 [optarg = optarg](auto ele) { return strcmp(optarg, ele) == 0; });
+                const auto i = std::distance(std::begin(FORMATlist), ret);
+                if (i >= FORMAT_NUM)
+                    typeindex = IR_FORMAT_INVALID;
+                else
+                    typeindex = static_cast<IR_FORMAT>(i+1);
                 break;
+            }
             case 'r':
                 read_flag = 1;
                 break;
@@ -215,35 +236,6 @@ int main(int argc, char *argv[]) {
                 exit(1);
                 break;
             }
-        }
-    }
-
-    IR_FORMAT typeindex = IR_FORMAT_INVALID;
-    if (type_flag) {
-        const auto ret =
-            std::find_if(std::begin(FORMATlist), std::end(FORMATlist),
-                         [type_arg](auto ele) { return strcmp(type_arg, ele) == 0; });
-        const auto i = std::distance(std::begin(FORMATlist), ret);
-        if (i >= FORMAT_NUM)
-            typeindex = IR_FORMAT_INVALID;
-        else
-            typeindex = static_cast<IR_FORMAT>(i+1);
-    }
-
-    if (Code_flag) {
-        str_len = strlen(Code_arg);
-        char hex_buff[5] = "\0";
-        for (auto fi = 0; fi < str_len / 2; fi++) {
-            strcpy(hex_buff, "0x");
-            strncat(hex_buff, &Code_arg[fi * 2], 2);
-
-            if (code != NULL) {
-                delete code;
-                code = new byte[codeCount + 1];
-            } else {
-                code = new byte[codeCount + 1];
-            }
-            code[codeCount++] = (byte)strtol(hex_buff, &endPtr, 0);
         }
     }
 
