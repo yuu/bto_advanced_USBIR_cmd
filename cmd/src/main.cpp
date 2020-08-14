@@ -6,6 +6,39 @@
 
 #include "btoir.h"
 
+#define OPTION_NUM 10
+
+static char PLAOPTIONlist[OPTION_NUM-2][20] =
+{
+    "Plarail_StopA",
+    "Plarail_StopB",
+    "Plarail_Speed_UpAF",
+    "Plarail_Speed_UpAB",
+    "Plarail_Speed_UpBF",
+    "Plarail_Speed_UpBB",
+    "Plarail_Speed_DownA",
+    "Plarail_Speed_DownB"
+};
+
+void setup_optargs(struct option options[]) {
+    int fi;
+    for (fi = 0; fi < OPTION_NUM - 2; fi++) {
+        options[fi].name = PLAOPTIONlist[fi];
+        options[fi].has_arg = no_argument;
+        options[fi].flag = NULL;
+        options[fi].val = 1;
+    }
+
+    options[OPTION_NUM - 2].name = "version";
+    options[OPTION_NUM - 2].has_arg = no_argument;
+    options[OPTION_NUM - 2].flag = NULL;
+    options[OPTION_NUM - 2].val = 2;
+    options[OPTION_NUM - 1].name = 0;
+    options[OPTION_NUM - 1].has_arg = 0;
+    options[OPTION_NUM - 1].flag = NULL;
+    options[OPTION_NUM - 1].val = 0;
+}
+
 int main(int argc, char *argv[]) {
     libusb_context *ctx = NULL;
     int ret = 1;

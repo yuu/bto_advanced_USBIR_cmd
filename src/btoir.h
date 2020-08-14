@@ -23,7 +23,6 @@ typedef unsigned char bool;
 
 #define BUFF_SIZE 64
 #define FORMAT_NUM 4
-#define OPTION_NUM 10
 
 #define IR_FREQ_MIN						25000	// 赤外線周波数設定最小値 25KHz
 #define IR_FREQ_MAX						50000	// 赤外線周波数設定最大値 50KHz
@@ -87,18 +86,6 @@ static char FORMATlist[FORMAT_NUM][11] =
     "NEC",
     "SONY",
     "MITSUBISHI"
-};
-
-static char PLAOPTIONlist[OPTION_NUM-2][20] =
-{
-    "Plarail_StopA",
-    "Plarail_StopB",
-    "Plarail_Speed_UpAF",
-    "Plarail_Speed_UpAB",
-    "Plarail_Speed_UpBF",
-    "Plarail_Speed_UpBB",
-    "Plarail_Speed_DownA",
-    "Plarail_Speed_DownB"
 };
 
 void close_device(libusb_context *ctx, libusb_device_handle *devh);

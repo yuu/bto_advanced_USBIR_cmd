@@ -107,25 +107,6 @@ libusb_device_handle *open_device(libusb_context *ctx) {
     return devh;
 }
 
-void setup_optargs(struct option options[]) {
-    int fi;
-    for (fi = 0; fi < OPTION_NUM - 2; fi++) {
-        options[fi].name = PLAOPTIONlist[fi];
-        options[fi].has_arg = no_argument;
-        options[fi].flag = NULL;
-        options[fi].val = 1;
-    }
-
-    options[OPTION_NUM - 2].name = "version";
-    options[OPTION_NUM - 2].has_arg = no_argument;
-    options[OPTION_NUM - 2].flag = NULL;
-    options[OPTION_NUM - 2].val = 2;
-    options[OPTION_NUM - 1].name = 0;
-    options[OPTION_NUM - 1].has_arg = 0;
-    options[OPTION_NUM - 1].flag = NULL;
-    options[OPTION_NUM - 1].val = 0;
-}
-
 void usage(char *fname) {
     fprintf(stderr, "usage: %s <option>\n", fname);
     fprintf(stderr, "  -f <freq>\t-dオプションまたは -rオプションを指定した場合のみ使用できます。\n");
