@@ -25,11 +25,10 @@ typedef unsigned char bool;
 
 #define IR_FREQ_MIN						25000	// 赤外線周波数設定最小値 25KHz
 #define IR_FREQ_MAX						50000	// 赤外線周波数設定最大値 50KHz
+#define IR_FREQ_DEFAULT					38000
+
 #define IR_SEND_DATA_USB_SEND_MAX_LEN	14		// USB送信１回で送信する最大ビット数
 #define IR_SEND_DATA_MAX_LEN			300		// 赤外線送信データ設定最大長[byte]
-
-#define IR_FREQ_DEFAULT					38000
-static uint frequency = IR_FREQ_DEFAULT;
 
 #define MAX_BYTE_ARRAY_SIZE				9600
 

@@ -121,7 +121,7 @@ void version(char *fname) {
 }
 
 int main(int argc, char *argv[]) {
-    int freq_flag = 0;
+    uint frequency = IR_FREQ_DEFAULT;
     int type_flag = 0;
     int code_flag = 0;
     int Code_flag = 0;
@@ -203,7 +203,6 @@ int main(int argc, char *argv[]) {
                 break;
             }
             case 'f':
-                freq_flag = 1;
                 frequency = atoi(optarg);
                 break;
             case 't': {
@@ -240,22 +239,19 @@ int main(int argc, char *argv[]) {
     }
 
 #define RTH(cond, msg) \
-    [freq_flag, type_flag, code_flag, Code_flag, data_flag, pla_flag, read_flag, stop_flag, get_flag, placounter, dataCount, typeindex, str_len] \
+    [type_flag, code_flag, Code_flag, data_flag, pla_flag, read_flag, stop_flag, get_flag, placounter, dataCount, typeindex, str_len] \
         () { return std::make_tuple((cond), msg); }
 
     using namespace std::string_literals;
     const std::vector<std::function<std::tuple<bool, std::string>()>> rules = {
         RTH((code_flag || Code_flag) && data_flag, "エラー: -dオプションと-cまたは-Cオプションとは同時に指定できません。\n"s),
         RTH(code_flag && Code_flag, "エラー: -cオプションと-Cオプションとは同時に指定できません。\n"),
-        RTH(freq_flag && (code_flag || Code_flag), "エラー: -rまたは-Cオプションと-fオプションは同時に指定できません。\n"s),
         RTH((code_flag || Code_flag || data_flag) && (read_flag || stop_flag || get_flag),
             "エラー: 送信系専用のオプション：-c、-C、-dオプションと受信系専用のオプション：-r、-s、-gオプションは同時に指定できません。\n"s),
         RTH((read_flag && stop_flag) || (stop_flag && get_flag) || (read_flag && get_flag), "エラー: -rオプション、-sオプション、-gオプションは同時に指定できません。\n"s),
-        RTH(freq_flag && (stop_flag || get_flag), "エラー: -sまたは-gオプションと-fオプションは同時に指定できません。\n"s),
         RTH(((!type_flag) && (code_flag || Code_flag)) || (((!code_flag) && (!Code_flag)) && type_flag), "エラー: -tオプションと-cまたは-Cオプションとは必ずセットで指定して下さい。\n"s),
-        RTH(((!data_flag) || (!read_flag)) && freq_flag, "エラー: -fオプションは-dオプションまたは-rオプションを指定した場合のみ使用できます。\n"s),
-        RTH(pla_flag && (freq_flag || type_flag || data_flag || code_flag || read_flag || stop_flag || get_flag), "エラー: プラレール赤外線命令オプションは単独で指定して下さい。\n"s),
-        RTH(stop_flag && (freq_flag || type_flag || data_flag || code_flag || read_flag || get_flag), "エラー: -sオプションは単独で指定して下さい。\n"s),
+        RTH(pla_flag && (type_flag || data_flag || code_flag || read_flag || stop_flag || get_flag), "エラー: プラレール赤外線命令オプションは単独で指定して下さい。\n"s),
+        RTH(stop_flag && (type_flag || data_flag || code_flag || read_flag || get_flag), "エラー: -sオプションは単独で指定して下さい。\n"s),
         RTH(placounter > 1, "エラー: プラレール赤外線命令オプションは単独で指定して下さい。\n"),
         RTH(data_flag && ((dataCount % 2) != 0), string_format("エラー: データの総数は偶数である必要があります。: %d\n", dataCount)),
         RTH(type_flag && typeindex == IR_FORMAT_INVALID, "エラー: 正しい赤外線フォーマットのタイプを指定して下さい。\n"s),
@@ -263,7 +259,7 @@ int main(int argc, char *argv[]) {
     };
 #undef RTH
 
-    if ((!type_flag) && (!freq_flag) && (!code_flag) && (!Code_flag) && (!data_flag) && (!pla_flag) && (!read_flag) &&
+    if ((!type_flag) && (!code_flag) && (!Code_flag) && (!data_flag) && (!pla_flag) && (!read_flag) &&
         (!stop_flag) && (!get_flag)) {
         usage(argv[0]);
         exit(1);
