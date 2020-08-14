@@ -22,7 +22,6 @@ typedef unsigned char bool;
 #endif
 
 #define BUFF_SIZE 64
-#define FORMAT_NUM 4
 
 #define IR_FREQ_MIN						25000	// 赤外線周波数設定最小値 25KHz
 #define IR_FREQ_MAX						50000	// 赤外線周波数設定最大値 50KHz
@@ -48,8 +47,8 @@ static uint frequency = IR_FREQ_DEFAULT;
 #define FORMAT_MITSU_BIT_ON				0x000F004D	// MITSUBISHI BitON  ON:0.4ms/26us=15(0x0F), OFF:2.0ms/26us=77(0x4D)
 #define FORMAT_STOP_CODE				0x00170619	// STOP CODE
 
-enum
-{
+enum IR_FORMAT {
+    IR_FORMAT_INVALID = -1,
     IR_FORMAT_AEHA = 1,
     IR_FORMAT_NEC,
     IR_FORMAT_SONY,
@@ -80,20 +79,12 @@ enum
     Plarail_Speed_DownB
 };
 
-static char FORMATlist[FORMAT_NUM][11] =
-{
-    "AEHA",
-    "NEC",
-    "SONY",
-    "MITSUBISHI"
-};
-
     struct btoir;
 
     struct btoir *bto_open();
     void bto_close(struct btoir *bto);
 
-int writeUSBIR(struct btoir *bto, uint format_type, byte code[], int code_len);
+int writeUSBIR(struct btoir *bto, enum IR_FORMAT format_type, byte code[], int code_len);
 int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint bit_0, uint bit_1, uint stop_code, byte code[], uint bit_len);
 int writeUSBIRData(struct btoir *bto, uint freq, byte data[], uint data_count);
 int writeUSBIRData_Ushort(struct btoir *bto, uint freq, ushort data[], uint bit_len, uint ele_num);

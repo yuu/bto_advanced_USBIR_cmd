@@ -20,3 +20,4 @@ target_link_libraries(${PROJECT_NAME}
   PUBLIC bto_advanced_usbir_lib
   PUBLIC ${LIBUSB_LIBRARIES}
 )
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)

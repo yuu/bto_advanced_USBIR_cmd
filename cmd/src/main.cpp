@@ -3,9 +3,18 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <algorithm>
+#include <vector>
+#include <functional>
+#include <tuple>
+#include <memory>
+#include <string>
+#include <stdexcept>
+
 #include "btoir.h"
 
 #define OPTION_NUM 10
+#define FORMAT_NUM 4
 
 static char PLAOPTIONlist[OPTION_NUM-2][20] =
 {
@@ -18,6 +27,22 @@ static char PLAOPTIONlist[OPTION_NUM-2][20] =
     "Plarail_Speed_DownA",
     "Plarail_Speed_DownB"
 };
+
+static const char *FORMATlist[FORMAT_NUM] = {
+    "AEHA",
+    "NEC",
+    "SONY",
+    "MITSUBISHI"
+};
+
+template<typename ... Args>
+std::string string_format(const std::string& format, Args ... args) {
+    size_t size = snprintf(nullptr, 0, format.c_str(), args ...) + 1; // Extra space for '\0'
+    if ( size <= 0 ) { throw std::runtime_error("Error during formatting."); }
+    std::unique_ptr<char[]> buf(new char[ size ]);
+    snprintf(buf.get(), size, format.c_str(), args ...);
+    return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
+}
 
 void setup_optargs(struct option options[]) {
     int fi;
@@ -115,8 +140,9 @@ int main(int argc, char *argv[]) {
     uint codeCount = 0;
     char *endPtr;
     int placounter = 0, plaindex;
-    int fi, typeindex = -1;
+    int fi = -1;
     uint ibit_len = 0;
+    IR_FORMAT typeindex = IR_FORMAT_INVALID;
 
     options = new option[OPTION_NUM];
     setup_optargs(options);
@@ -188,71 +214,19 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if ((!type_flag) && (!freq_flag) && (!code_flag) && (!Code_flag) && (!data_flag) && (!pla_flag) && (!read_flag) &&
-        (!stop_flag) && (!get_flag)) {
-        usage(argv[0]);
-        exit(1);
-    } else if ((code_flag || Code_flag) && data_flag) {
-        fprintf(stderr, "エラー: -dオプションと-cまたは-Cオプションとは同時に指定できません。\n");
-        exit(1);
-    } else if (code_flag && Code_flag) {
-        fprintf(stderr, "エラー: -cオプションと-Cオプションとは同時に指定できません。\n");
-        exit(1);
-    } else if (freq_flag && (code_flag || Code_flag)) {
-        fprintf(stderr, "エラー: -rまたは-Cオプションと-fオプションは同時に指定できません。\n");
-        exit(1);
-    } else if ((code_flag || Code_flag || data_flag) && (read_flag || stop_flag || get_flag)) {
-        fprintf(stderr,
-                "エラー: "
-                "送信系専用のオプション：-c、-C、-dオプションと受信系専用のオプション：-r、-s、-"
-                "gオプションは同時に指定できません。\n");
-        exit(1);
-    } else if ((read_flag && stop_flag) || (stop_flag && get_flag) || (read_flag && get_flag)) {
-        fprintf(stderr, "エラー: -rオプション、-sオプション、-gオプションは同時に指定できません。\n");
-        exit(1);
-    } else if (freq_flag && (stop_flag || get_flag)) {
-        fprintf(stderr, "エラー: -sまたは-gオプションと-fオプションは同時に指定できません。\n");
-        exit(1);
-    } else if (((!type_flag) && (code_flag || Code_flag)) || (((!code_flag) && (!Code_flag)) && type_flag)) {
-        fprintf(stderr, "エラー: -tオプションと-cまたは-Cオプションとは必ずセットで指定して下さい。\n");
-        exit(1);
-    } else if (((!data_flag) || (!read_flag)) && freq_flag) {
-        fprintf(stderr, "エラー: -fオプションは-dオプションまたは-rオプションを指定した場合のみ使用できます。\n");
-        exit(1);
-    } else if (pla_flag && (freq_flag || type_flag || data_flag || code_flag || read_flag || stop_flag || get_flag)) {
-        fprintf(stderr, "エラー: プラレール赤外線命令オプションは単独で指定して下さい。\n");
-        exit(1);
-    } else if (stop_flag && (freq_flag || type_flag || data_flag || code_flag || read_flag || get_flag)) {
-        fprintf(stderr, "エラー: -sオプションは単独で指定して下さい。\n");
-        exit(1);
-    } else if (placounter > 1) {
-        fprintf(stderr, "エラー: プラレール赤外線命令オプションは単独で指定して下さい。\n");
-        exit(1);
-    } else if (type_flag) {
-        for (fi = 0; fi < FORMAT_NUM; fi++) {
-            if ((ret = strcmp(type_arg, FORMATlist[fi])) == 0) {
-                typeindex = fi;
-                break;
-            }
-        }
-        if (typeindex < 0) {
-            fprintf(stderr, "エラー: 正しい赤外線フォーマットのタイプを指定して下さい。\n");
-            exit(1);
-        }
-        typeindex++;  // enumの方は1から開始だから
+    if (type_flag) {
+        const auto ret =
+            std::find_if(std::begin(FORMATlist), std::end(FORMATlist),
+                         [type_arg](auto ele) { return strcmp(type_arg, ele) == 0; });
+        const auto i = std::distance(std::begin(FORMATlist), ret);
+        if (i >= FORMAT_NUM)
+            typeindex = IR_FORMAT_INVALID;
+        else
+            typeindex = static_cast<IR_FORMAT>(i+1);
     }
 
-    if (data_flag) {
-        if ((dataCount % 2) != 0) {
-            fprintf(stderr, "エラー: データの総数は偶数である必要があります。: %d\n", dataCount);
-            exit(1);
-        }
-    } else if (Code_flag) {
+    if (Code_flag) {
         str_len = strlen(Code_arg);
-        if ((str_len % 2) != 0) {
-            fprintf(stderr, "エラー: コード長は2の倍数である必要があります。: %d\n", str_len);
-            exit(1);
-        }
         for (fi = 0; fi < str_len / 2; fi++) {
             strcpy(hex_buff, "0x");
             strncat(hex_buff, &Code_arg[fi * 2], 2);
@@ -264,6 +238,43 @@ int main(int argc, char *argv[]) {
                 code = new byte[codeCount + 1];
             }
             code[codeCount++] = (byte)strtol(hex_buff, &endPtr, 0);
+        }
+    }
+
+#define RTH(cond, msg) \
+    [freq_flag, type_flag, code_flag, Code_flag, data_flag, pla_flag, read_flag, stop_flag, get_flag, placounter, dataCount, typeindex, str_len] \
+        () { return std::make_tuple((cond), msg); }
+
+    using namespace std::string_literals;
+    const std::vector<std::function<std::tuple<bool, std::string>()>> rules = {
+        RTH((code_flag || Code_flag) && data_flag, "エラー: -dオプションと-cまたは-Cオプションとは同時に指定できません。\n"s),
+        RTH(code_flag && Code_flag, "エラー: -cオプションと-Cオプションとは同時に指定できません。\n"),
+        RTH(freq_flag && (code_flag || Code_flag), "エラー: -rまたは-Cオプションと-fオプションは同時に指定できません。\n"s),
+        RTH((code_flag || Code_flag || data_flag) && (read_flag || stop_flag || get_flag),
+            "エラー: 送信系専用のオプション：-c、-C、-dオプションと受信系専用のオプション：-r、-s、-gオプションは同時に指定できません。\n"s),
+        RTH((read_flag && stop_flag) || (stop_flag && get_flag) || (read_flag && get_flag), "エラー: -rオプション、-sオプション、-gオプションは同時に指定できません。\n"s),
+        RTH(freq_flag && (stop_flag || get_flag), "エラー: -sまたは-gオプションと-fオプションは同時に指定できません。\n"s),
+        RTH(((!type_flag) && (code_flag || Code_flag)) || (((!code_flag) && (!Code_flag)) && type_flag), "エラー: -tオプションと-cまたは-Cオプションとは必ずセットで指定して下さい。\n"s),
+        RTH(((!data_flag) || (!read_flag)) && freq_flag, "エラー: -fオプションは-dオプションまたは-rオプションを指定した場合のみ使用できます。\n"s),
+        RTH(pla_flag && (freq_flag || type_flag || data_flag || code_flag || read_flag || stop_flag || get_flag), "エラー: プラレール赤外線命令オプションは単独で指定して下さい。\n"s),
+        RTH(stop_flag && (freq_flag || type_flag || data_flag || code_flag || read_flag || get_flag), "エラー: -sオプションは単独で指定して下さい。\n"s),
+        RTH(placounter > 1, "エラー: プラレール赤外線命令オプションは単独で指定して下さい。\n"),
+        RTH(data_flag && ((dataCount % 2) != 0), string_format("エラー: データの総数は偶数である必要があります。: %d\n", dataCount)),
+        RTH(type_flag && typeindex == IR_FORMAT_INVALID, "エラー: 正しい赤外線フォーマットのタイプを指定して下さい。\n"s),
+        RTH(Code_flag && (str_len % 2) != 0, string_format("エラー: コード長は2の倍数である必要があります。: %d\n", str_len)),
+    };
+#undef RTH
+
+    if ((!type_flag) && (!freq_flag) && (!code_flag) && (!Code_flag) && (!data_flag) && (!pla_flag) && (!read_flag) &&
+        (!stop_flag) && (!get_flag)) {
+        usage(argv[0]);
+        exit(1);
+    }
+
+    for (const auto rule : rules) {
+        if (const auto ret = rule(); std::get<0>(ret)) {
+            fprintf(stderr, "%s", std::get<1>(ret).c_str());
+            exit(1);
         }
     }
 

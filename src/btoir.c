@@ -138,7 +138,7 @@ libusb_device_handle *open_device(libusb_context *ctx) {
     return devh;
 }
 
-int writeUSBIR(struct btoir *bto, uint format_type, byte code[], int code_len) {
+int writeUSBIR(struct btoir *bto, enum IR_FORMAT format_type, byte code[], int code_len) {
     struct libusb_device_handle *devh = bto->dev_handle;
     uint reader_code = 0, bit_0 = 0, bit_1 = 0, stop_code = FORMAT_STOP_CODE;
     int i_ret = -1;
