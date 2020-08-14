@@ -445,7 +445,7 @@ int writeUSBIRData(struct btoir *bto, uint freq, byte data[], uint data_count) {
     return i_ret;
 }
 
-int writeUSBIRData_Ushort(struct btoir *bto, uint freq, ushort udata[], uint bit_len, uint ele_num) {
+static int writeUSBIRData_Ushort(struct btoir *bto, uint freq, ushort udata[], uint bit_len, uint ele_num) {
     uint fi;
     int ji;
     uint dataCount = bit_len * 4;
