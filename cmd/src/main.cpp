@@ -10,6 +10,7 @@
 #include <memory>
 #include <string>
 #include <stdexcept>
+#include <optional>
 
 #include "btoir.h"
 
@@ -122,7 +123,8 @@ void version(char *fname) {
 
 int main(int argc, char *argv[]) {
     uint frequency = IR_FREQ_DEFAULT;
-    int type_flag = 0;
+    std::optional<IR_FORMAT> format;
+
     int code_flag = 0;
     int Code_flag = 0;
     int str_len = 0;
@@ -137,7 +139,7 @@ int main(int argc, char *argv[]) {
     uint codeCount = 0;
     char *endPtr;
     int placounter = 0, plaindex;
-    IR_FORMAT typeindex = IR_FORMAT_INVALID;
+
 
     {
         auto optionss = setup_optargs();
@@ -206,15 +208,14 @@ int main(int argc, char *argv[]) {
                 frequency = atoi(optarg);
                 break;
             case 't': {
-                type_flag = 1;
                 const auto ret =
                     std::find_if(std::begin(FORMATlist), std::end(FORMATlist),
                                  [optarg = optarg](auto ele) { return strcmp(optarg, ele) == 0; });
                 const auto i = std::distance(std::begin(FORMATlist), ret);
                 if (i >= FORMAT_NUM)
-                    typeindex = IR_FORMAT_INVALID;
+                    format = IR_FORMAT_INVALID;
                 else
-                    typeindex = static_cast<IR_FORMAT>(i+1);
+                    format = static_cast<IR_FORMAT>(i+1);
                 break;
             }
             case 'r':
@@ -239,7 +240,7 @@ int main(int argc, char *argv[]) {
     }
 
 #define RTH(cond, msg) \
-    [type_flag, code_flag, Code_flag, data_flag, pla_flag, read_flag, stop_flag, get_flag, placounter, dataCount, typeindex, str_len] \
+    [format, code_flag, Code_flag, data_flag, pla_flag, read_flag, stop_flag, get_flag, placounter, dataCount, str_len] \
         () { return std::make_tuple((cond), msg); }
 
     using namespace std::string_literals;
@@ -249,27 +250,26 @@ int main(int argc, char *argv[]) {
         RTH((code_flag || Code_flag || data_flag) && (read_flag || stop_flag || get_flag),
             "エラー: 送信系専用のオプション：-c、-C、-dオプションと受信系専用のオプション：-r、-s、-gオプションは同時に指定できません。\n"s),
         RTH((read_flag && stop_flag) || (stop_flag && get_flag) || (read_flag && get_flag), "エラー: -rオプション、-sオプション、-gオプションは同時に指定できません。\n"s),
-        RTH(((!type_flag) && (code_flag || Code_flag)) || (((!code_flag) && (!Code_flag)) && type_flag), "エラー: -tオプションと-cまたは-Cオプションとは必ずセットで指定して下さい。\n"s),
-        RTH(pla_flag && (type_flag || data_flag || code_flag || read_flag || stop_flag || get_flag), "エラー: プラレール赤外線命令オプションは単独で指定して下さい。\n"s),
-        RTH(stop_flag && (type_flag || data_flag || code_flag || read_flag || get_flag), "エラー: -sオプションは単独で指定して下さい。\n"s),
+        RTH(!format && (!code_flag || !Code_flag), "エラー: -tオプションと-cまたは-Cオプションとは必ずセットで指定して下さい。\n"s),
+        RTH(pla_flag && (data_flag || code_flag || read_flag || stop_flag || get_flag), "エラー: プラレール赤外線命令オプションは単独で指定して下さい。\n"s),
         RTH(placounter > 1, "エラー: プラレール赤外線命令オプションは単独で指定して下さい。\n"),
         RTH(data_flag && ((dataCount % 2) != 0), string_format("エラー: データの総数は偶数である必要があります。: %d\n", dataCount)),
-        RTH(type_flag && typeindex == IR_FORMAT_INVALID, "エラー: 正しい赤外線フォーマットのタイプを指定して下さい。\n"s),
+        RTH(!format && format == IR_FORMAT_INVALID, "エラー: 正しい赤外線フォーマットのタイプを指定して下さい。\n"s),
         RTH(Code_flag && (str_len % 2) != 0, string_format("エラー: コード長は2の倍数である必要があります。: %d\n", str_len)),
     };
 #undef RTH
-
-    if ((!type_flag) && (!code_flag) && (!Code_flag) && (!data_flag) && (!pla_flag) && (!read_flag) &&
-        (!stop_flag) && (!get_flag)) {
-        usage(argv[0]);
-        exit(1);
-    }
 
     for (const auto rule : rules) {
         if (const auto ret = rule(); std::get<0>(ret)) {
             fprintf(stderr, "%s", std::get<1>(ret).c_str());
             exit(1);
         }
+    }
+
+    if ((!format) && (!code_flag) && (!Code_flag) && (!data_flag) && (!pla_flag) && (!read_flag) &&
+        (!stop_flag) && (!get_flag)) {
+        usage(argv[0]);
+        exit(1);
     }
 
     btoir *bto = bto_open();
@@ -286,7 +286,7 @@ int main(int argc, char *argv[]) {
                 return ret;
             }
             if (code_flag || Code_flag) {
-                if ((ret = writeUSBIR(bto, typeindex, code, codeCount * 8)) < 0)
+                if ((ret = writeUSBIR(bto, *format, code, codeCount * 8)) < 0)
                     fprintf(stderr, "error %d\n", ret);
                 return ret;
             }
