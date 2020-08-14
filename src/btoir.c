@@ -184,8 +184,8 @@ int writeUSBIR(struct btoir *bto, enum IR_FORMAT format_type, byte code[], int c
     return i_ret;
 }
 
-int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint bit_0, uint bit_1,
-                   uint stop_code, byte code[], uint bit_len) {
+static int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint bit_0, uint bit_1,
+                          uint stop_code, byte code[], uint bit_len) {
     struct libusb_device_handle *devh = bto->dev_handle;
     uint fi;
     int byte_pos, bit_pos, bit_mask, tmp_data;
