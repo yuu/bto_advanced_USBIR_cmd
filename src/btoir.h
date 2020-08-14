@@ -90,9 +90,6 @@ static char FORMATlist[FORMAT_NUM][11] =
 
 void close_device(libusb_context *ctx, libusb_device_handle *devh);
 libusb_device_handle* open_device(libusb_context *ctx);
-void setup_optargs(struct option options[]);
-void usage(char *fname);
-void version(char *fname);
 int writeUSBIR(struct libusb_device_handle *devh, uint format_type, byte code[], int code_len);
 int writeUSBIRCode(struct libusb_device_handle *devh, uint freq, uint reader_code, uint bit_0, uint bit_1, uint stop_code, byte code[], uint bit_len);
 int writeUSBIRData(struct libusb_device_handle *devh, uint freq, byte data[], uint bit_len, uint data_count);

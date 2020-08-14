@@ -107,59 +107,6 @@ libusb_device_handle *open_device(libusb_context *ctx) {
     return devh;
 }
 
-void usage(char *fname) {
-    fprintf(stderr, "usage: %s <option>\n", fname);
-    fprintf(stderr, "  -f <freq>\t-dオプションまたは -rオプションを指定した場合のみ使用できます。\n");
-    fprintf(stderr, "           \t指定しない場合は%dになります。\n", IR_FREQ_DEFAULT);
-    fprintf(stderr, "  -t {AEHA,NEC,SONY,MITSUBISHI}\n");
-    fprintf(stderr, "  -c <code>\t家電協(AEHA)フォーマット、NECフォーマット、SONYフォーマット、三菱フォーマットの\n");
-    fprintf(stderr, "           \tコードデータをこの -cオプション引数として指定します。\n");
-    fprintf(stderr,
-            "           \t書式は-dオプションと同じ 0xFF,0xFF,... です。必ず-tオプションとセットで指定します。\n");
-    fprintf(stderr, "  -C <Code>\t家電協(AEHA)フォーマット、NECフォーマット、SONYフォーマット、三菱フォーマットの\n");
-    fprintf(stderr, "           \tコードデータをこの -Cオプション引数として指定します。\n");
-    fprintf(stderr, "           \t書式は0xの付かない16進文字列 FFFF... です。必ず-tオプションとセットで指定します。\n");
-    fprintf(stderr, "  -d <data>\t受信設定または送信設定コンフィグレーションツールで、クリップボードに\n");
-    fprintf(stderr, "           \tコピーボタンでコピーしたデータ、または、-gオプションで取得したデータが、\n");
-    fprintf(stderr, "           \tこの -dオプション引数として使用可能です。\n");
-    fprintf(stderr, "           \t-fオプションのみ追加で指定可能です。\n");
-    fprintf(stderr, "  -r       \t受信開始を指令します。\n");
-    fprintf(stderr, "           \t-fオプションのみ追加で指定可能です。\n");
-    fprintf(stderr, "           \t受信設定または送信設定コンフィグレーションツールで取得できるデータが、\n");
-    fprintf(stderr, "           \t本コマンドでも取得できます。\n");
-    fprintf(stderr, "  -s       \t受信停止を指令します。\n");
-    fprintf(stderr, "  -g       \t直前に受信を終えたデータが所得できます。\n");
-    fprintf(stderr, "  --Plarail_StopA\t\tこのオプションは必ず単独で指定します。\n");
-    fprintf(stderr, "  --Plarail_StopB\t\tこのオプションは必ず単独で指定します。\n");
-    fprintf(stderr, "  --Plarail_Speed_UpAF\t\tこのオプションは必ず単独で指定します。\n");
-    fprintf(stderr, "  --Plarail_Speed_UpAB\t\tこのオプションは必ず単独で指定します。\n");
-    fprintf(stderr, "  --Plarail_Speed_UpBF\t\tこのオプションは必ず単独で指定します。\n");
-    fprintf(stderr, "  --Plarail_Speed_UpBB\t\tこのオプションは必ず単独で指定します。\n");
-    fprintf(stderr, "  --Plarail_Speed_DownA\t\tこのオプションは必ず単独で指定します。\n");
-    fprintf(stderr, "  --Plarail_Speed_DownB\t\tこのオプションは必ず単独で指定します。\n");
-    fprintf(stderr, "  --version\n");
-    fprintf(stderr,
-            "※ getopt_longモジュールの制限を回避する為、プラレール用のオプションは末尾まで正確に指定して下さい。\n\n");
-    fprintf(stderr, "使い方の例\n");
-    fprintf(stderr, "受信系\n");
-    fprintf(stderr, "$ bto_advanced_USBIR_cmd -r         # (生データ)受信開始\n");
-    fprintf(stderr, "$ bto_advanced_USBIR_cmd -s         # (生データ)受信停止\n");
-    fprintf(stderr, "$ bto_advanced_USBIR_cmd -g | tee data.txt  # 生データ所得\n\n");
-    fprintf(stderr, "送信系\n");
-    fprintf(stderr, "$ bto_advanced_USBIR_cmd -d `cat data.txt`\n");
-    fprintf(stderr, "$ bto_advanced_USBIR_cmd -t AEHA       -C 123456789ABC\n");
-    fprintf(stderr, "$ bto_advanced_USBIR_cmd -t NEC        -C 08F6817E\n");
-    fprintf(stderr, "$ bto_advanced_USBIR_cmd -t SONY       -C 08F6817E\n");
-    fprintf(stderr, "$ bto_advanced_USBIR_cmd -t MITSUBISHI -C 08F6817E\n");
-    fprintf(stderr, "$ bto_advanced_USBIR_cmd --Plarail_Speed_UpAF\n");
-}
-
-void version(char *fname) {
-    fprintf(stderr, "%s\t%s\n", fname, APP_VERSION);
-    fprintf(stderr, "Copyright (C) 2015   Bit Trade One, LTD.\n");
-    fprintf(stderr, "ライセンス:ADL   ADLの内容は:http://bit-trade-one.co.jp/adl/\n");
-}
-
 int writeUSBIR(struct libusb_device_handle *devh, uint format_type, byte code[], int code_len) {
     uint reader_code = 0, bit_0 = 0, bit_1 = 0, stop_code = FORMAT_STOP_CODE;
     int i_ret = -1;
