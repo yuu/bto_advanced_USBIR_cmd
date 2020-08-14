@@ -1,7 +1,5 @@
 #pragma once
 
-#include <libusb.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -90,17 +88,11 @@ static char FORMATlist[FORMAT_NUM][11] =
     "MITSUBISHI"
 };
 
-
-    struct btoir {
-        libusb_context *ctx;
-        libusb_device_handle *dev_handle;
-    };
+    struct btoir;
 
     struct btoir *bto_open();
     void bto_close(struct btoir *bto);
 
-void close_device(libusb_context *ctx, libusb_device_handle *devh);
-libusb_device_handle* open_device(libusb_context *ctx);
 int writeUSBIR(struct btoir *bto, uint format_type, byte code[], int code_len);
 int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint bit_0, uint bit_1, uint stop_code, byte code[], uint bit_len);
 int writeUSBIRData(struct btoir *bto, uint freq, byte data[], uint bit_len, uint data_count);

@@ -1,5 +1,4 @@
 #include <getopt.h>
-#include <libusb.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

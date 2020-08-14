@@ -36,6 +36,14 @@ $ bto_advanced_USBIR_cmd --Plarail_Speed_UpAF
 
 #include "btoir.h"
 
+void close_device(libusb_context *ctx, libusb_device_handle *devh);
+libusb_device_handle* open_device(libusb_context *ctx);
+
+struct btoir {
+    libusb_context *ctx;
+    libusb_device_handle *dev_handle;
+};
+
 struct btoir *bto_open() {
     struct libusb_context *ctx = NULL;
     const int ret = libusb_init(&ctx);
