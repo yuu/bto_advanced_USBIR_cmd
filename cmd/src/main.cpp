@@ -285,6 +285,10 @@ int main(int argc, char *argv[]) {
     }
 
     btoir *bto = bto_open();
+    if (bto == nullptr) {
+        exit(1);
+    }
+
     const auto command =
         [=]() {
             int ret = 1;
