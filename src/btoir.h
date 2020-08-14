@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define APP_VERSION "1.0.0"
 
 #define VENDOR_ID  0x22ea
@@ -10,9 +14,12 @@
 typedef unsigned char byte;
 typedef unsigned int uint;
 typedef unsigned short ushort;
+
+#ifndef __cplusplus
 typedef unsigned char bool;
 #define true	1
 #define false	0
+#endif
 
 #define BUFF_SIZE 64
 #define FORMAT_NUM 4
@@ -109,3 +116,7 @@ int writeUSBIR_Plarail_Speed_Down(struct libusb_device_handle *devh, uint band);
 int recUSBIRData_Start(struct libusb_device_handle *devh, uint freq);
 int recUSBIRData_Stop(struct libusb_device_handle *devh);
 int readUSBIRData(struct libusb_device_handle *devh, byte data[], uint data_buff_len, uint *bit_len);
+
+#ifdef __cplusplus
+}
+#endif

@@ -5,7 +5,7 @@ project(bto_advanced_USBIR_cmd)
 find_package(PkgConfig)
 pkg_check_modules(LIBUSB libusb-1.0 REQUIRED)
 
-file(GLOB SOURCES src/*.c)
+file(GLOB SOURCES src/*.cpp)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 target_include_directories(${PROJECT_NAME}

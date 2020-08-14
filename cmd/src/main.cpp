@@ -1,6 +1,8 @@
 #include <getopt.h>
 #include <libusb.h>
-#include <stdio.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "btoir.h"
 
@@ -32,7 +34,7 @@ int main(int argc, char *argv[]) {
     int fi, typeindex = -1;
     uint ibit_len = 0;
 
-    options = malloc(sizeof(struct option) * OPTION_NUM);
+    options = new option[OPTION_NUM];
     setup_optargs(options);
     while ((ret = getopt_long(argc, argv, "f:t:c:C:d:rsgh", options, &option_index)) != -1) {
         switch (ret) {
@@ -49,9 +51,10 @@ int main(int argc, char *argv[]) {
             while ((s = strtok(optarg, ", ")) != NULL) {
                 optarg = NULL;
                 if (data != NULL) {
-                    data = realloc(data, dataCount + 1);
+                    delete data;
+                    data = new byte[dataCount + 1];
                 } else {
-                    data = malloc(dataCount + 1);
+                    data = new byte[dataCount + 1];
                 }
                 data[dataCount++] = (byte)strtol(s, &endPtr, 0);
             }
@@ -61,9 +64,10 @@ int main(int argc, char *argv[]) {
             while ((s = strtok(optarg, ", ")) != NULL) {
                 optarg = NULL;
                 if (code != NULL) {
-                    code = realloc(code, codeCount + 1);
+                    delete code;
+                    code = new byte[codeCount + 1];
                 } else {
-                    code = malloc(codeCount + 1);
+                    code = new byte[codeCount + 1];
                 }
                 code[codeCount++] = (byte)strtol(s, &endPtr, 0);
             }
@@ -170,9 +174,10 @@ int main(int argc, char *argv[]) {
             strncat(hex_buff, &Code_arg[fi * 2], 2);
 
             if (code != NULL) {
-                code = realloc(code, codeCount + 1);
+                delete code;
+                code = new byte[codeCount + 1];
             } else {
-                code = malloc(codeCount + 1);
+                code = new byte[codeCount + 1];
             }
             code[codeCount++] = (byte)strtol(hex_buff, &endPtr, 0);
         }
@@ -205,8 +210,7 @@ int main(int argc, char *argv[]) {
         else
             fprintf(stdout, "受信を停止しました。\n");
     } else if (get_flag) {
-        data = malloc(MAX_BYTE_ARRAY_SIZE);
-        memset(data, 0x00, MAX_BYTE_ARRAY_SIZE);
+        data = new byte[MAX_BYTE_ARRAY_SIZE];
 
         if ((ret = readUSBIRData(devh, data, MAX_BYTE_ARRAY_SIZE, &ibit_len)) < 0)
             fprintf(stderr, "error %d\n", ret);
