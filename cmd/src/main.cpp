@@ -127,7 +127,10 @@ int main(int argc, char *argv[]) {
 
     int code_flag = 0;
     int Code_flag = 0;
+    byte *code = nullptr;
+    uint codeCount = 0;
     int str_len = 0;
+
     int data_flag = 0;
     int pla_flag = 0;
     int read_flag = 0;
@@ -135,9 +138,6 @@ int main(int argc, char *argv[]) {
     int get_flag = 0;
     byte *data = NULL;
     uint dataCount = 0;
-    byte *code = NULL;
-    uint codeCount = 0;
-    char *endPtr;
     int placounter = 0, plaindex;
 
 
@@ -167,6 +167,7 @@ int main(int argc, char *argv[]) {
                     } else {
                         data = new byte[dataCount + 1];
                     }
+                    char *endPtr;
                     data[dataCount++] = (byte)strtol(s, &endPtr, 0);
                 }
                 break;
@@ -182,6 +183,7 @@ int main(int argc, char *argv[]) {
                     } else {
                         code = new byte[codeCount + 1];
                     }
+                    char *endPtr;
                     code[codeCount++] = (byte)strtol(s, &endPtr, 0);
                 }
                 break;
@@ -200,6 +202,7 @@ int main(int argc, char *argv[]) {
                     } else {
                         code = new byte[codeCount + 1];
                     }
+                    char *endPtr;
                     code[codeCount++] = (byte)strtol(hex_buff, &endPtr, 0);
                 }
                 break;
