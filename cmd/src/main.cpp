@@ -260,6 +260,11 @@ int main(int argc, char *argv[]) {
     };
 #undef RTH
 
+    if (argc <= 1) {
+        usage(argv[0]);
+        exit(1);
+    }
+
     for (const auto rule : rules) {
         if (const auto ret = rule(); std::get<0>(ret)) {
             fprintf(stderr, "%s", std::get<1>(ret).c_str());
