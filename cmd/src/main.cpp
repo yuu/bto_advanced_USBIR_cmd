@@ -134,13 +134,12 @@ int main(int argc, char *argv[]) {
     byte *data = nullptr;
     uint dataCount = 0;
 
-    int pla_flag = 0;
     int read_flag = 0;
     int stop_flag = 0;
     int get_flag = 0;
 
-    int placounter = 0, plaindex;
-
+    std::optional<int> plaindex;
+    int placounter = 0;
 
     {
         auto optionss = setup_optargs();
@@ -150,7 +149,6 @@ int main(int argc, char *argv[]) {
         while ((ret = getopt_long(argc, argv, "f:t:c:C:d:rsgh", options, &option_index)) != -1) {
             switch (ret) {
             case 1:
-                pla_flag = 1;
                 placounter++;
                 plaindex = option_index;
                 break;
@@ -243,7 +241,7 @@ int main(int argc, char *argv[]) {
     }
 
 #define RTH(cond, msg) \
-    [format, code_flag, Code_flag, data, pla_flag, read_flag, stop_flag, get_flag, placounter, dataCount, str_len] \
+    [format, code_flag, Code_flag, data, plaindex, read_flag, stop_flag, get_flag, placounter, dataCount, str_len] \
         () { return std::make_tuple((cond), msg); }
 
     using namespace std::string_literals;
@@ -254,7 +252,7 @@ int main(int argc, char *argv[]) {
             "エラー: 送信系専用のオプション：-c、-C、-dオプションと受信系専用のオプション：-r、-s、-gオプションは同時に指定できません。\n"s),
         RTH((read_flag && stop_flag) || (stop_flag && get_flag) || (read_flag && get_flag), "エラー: -rオプション、-sオプション、-gオプションは同時に指定できません。\n"s),
         RTH(!format && (!code_flag || !Code_flag), "エラー: -tオプションと-cまたは-Cオプションとは必ずセットで指定して下さい。\n"s),
-        RTH(pla_flag && (data || code_flag || read_flag || stop_flag || get_flag), "エラー: プラレール赤外線命令オプションは単独で指定して下さい。\n"s),
+        RTH(plaindex && (data || code_flag || read_flag || stop_flag || get_flag), "エラー: プラレール赤外線命令オプションは単独で指定して下さい。\n"s),
         RTH(placounter > 1, "エラー: プラレール赤外線命令オプションは単独で指定して下さい。\n"),
         RTH(data && ((dataCount % 2) != 0), string_format("エラー: データの総数は偶数である必要があります。: %d\n", dataCount)),
         RTH(!format && format == IR_FORMAT_INVALID, "エラー: 正しい赤外線フォーマットのタイプを指定して下さい。\n"s),
@@ -269,7 +267,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if ((!format) && (!code_flag) && (!Code_flag) && (!data) && (!pla_flag) && (!read_flag) &&
+    if ((!format) && (!code_flag) && (!Code_flag) && (!data) && (!plaindex) && (!read_flag) &&
         (!stop_flag) && (!get_flag)) {
         usage(argv[0]);
         exit(1);
@@ -322,8 +320,8 @@ int main(int argc, char *argv[]) {
                 }
                 return ret;
             }
-            if (pla_flag) {
-                switch (plaindex) {
+            if (plaindex) {
+                switch (*plaindex) {
                 case Plarail_StopA:
                     if ((ret = writeUSBIR_Plarail_Stop(bto, PLARAIL_BAND_BAND_A)) < 0)
                         fprintf(stderr, "error %d\n", ret);
