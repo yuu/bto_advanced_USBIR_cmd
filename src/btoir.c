@@ -38,6 +38,8 @@ $ bto_advanced_USBIR_cmd --Plarail_Speed_UpAF
 
 void close_device(libusb_context *ctx, libusb_device_handle *devh);
 libusb_device_handle* open_device(libusb_context *ctx);
+static int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint bit_0, uint bit_1, uint stop_code, byte code[], uint bit_len);
+static int writeUSBIRData_Ushort(struct btoir *bto, uint freq, ushort udata[], uint bit_len, uint ele_num);
 
 struct btoir {
     libusb_context *ctx;
