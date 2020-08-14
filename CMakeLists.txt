@@ -11,3 +11,5 @@ add_library(${PROJECT_NAME} STATIC ${LIB_SOURCES})
 target_include_directories(${PROJECT_NAME}
   PUBLIC ${LIBUSB_INCLUDE_DIRS}
 )
+
+set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 11)
