@@ -44,7 +44,9 @@ std::string string_format(const std::string& format, Args ... args) {
     return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
 }
 
-void setup_optargs(struct option options[]) {
+std::unique_ptr<struct option[]> setup_optargs() {
+    auto options = std::make_unique<struct option[]>(OPTION_NUM);
+
     int fi;
     for (fi = 0; fi < OPTION_NUM - 2; fi++) {
         options[fi].name = PLAOPTIONlist[fi];
@@ -61,6 +63,8 @@ void setup_optargs(struct option options[]) {
     options[OPTION_NUM - 1].has_arg = 0;
     options[OPTION_NUM - 1].flag = NULL;
     options[OPTION_NUM - 1].val = 0;
+
+    return options;
 }
 
 void usage(char *fname) {
@@ -117,103 +121,104 @@ void version(char *fname) {
 }
 
 int main(int argc, char *argv[]) {
-    int ret = 1;
-    struct option *options;
-    int option_index;
     int freq_flag = 0;
     int type_flag = 0;
     char type_arg[20] = "\0";
     int code_flag = 0;
     int Code_flag = 0;
     char Code_arg[600] = "\0";
-    char hex_buff[5] = "\0";
     int str_len = 0;
     int data_flag = 0;
     int pla_flag = 0;
     int read_flag = 0;
     int stop_flag = 0;
     int get_flag = 0;
-    char *s;
     byte *data = NULL;
     uint dataCount = 0;
     byte *code = NULL;
     uint codeCount = 0;
     char *endPtr;
     int placounter = 0, plaindex;
-    int fi = -1;
-    uint ibit_len = 0;
-    IR_FORMAT typeindex = IR_FORMAT_INVALID;
 
-    options = new option[OPTION_NUM];
-    setup_optargs(options);
-    while ((ret = getopt_long(argc, argv, "f:t:c:C:d:rsgh", options, &option_index)) != -1) {
-        switch (ret) {
-        case 1:
-            pla_flag = 1;
-            placounter++;
-            plaindex = option_index;
-            break;
-        case 2:
-            version(argv[0]);
-            exit(0);
-        case 'd':
-            data_flag = 1;
-            while ((s = strtok(optarg, ", ")) != NULL) {
-                optarg = NULL;
-                if (data != NULL) {
-                    delete data;
-                    data = new byte[dataCount + 1];
-                } else {
-                    data = new byte[dataCount + 1];
+    {
+        auto optionss = setup_optargs();
+        auto options = optionss.get();
+        int ret = 1;
+        int option_index;
+        while ((ret = getopt_long(argc, argv, "f:t:c:C:d:rsgh", options, &option_index)) != -1) {
+            switch (ret) {
+            case 1:
+                pla_flag = 1;
+                placounter++;
+                plaindex = option_index;
+                break;
+            case 2:
+                version(argv[0]);
+                exit(0);
+            case 'd': {
+                char *s;
+                data_flag = 1;
+                while ((s = strtok(optarg, ", ")) != NULL) {
+                    optarg = NULL;
+                    if (data != NULL) {
+                        delete data;
+                        data = new byte[dataCount + 1];
+                    } else {
+                        data = new byte[dataCount + 1];
+                    }
+                    data[dataCount++] = (byte)strtol(s, &endPtr, 0);
                 }
-                data[dataCount++] = (byte)strtol(s, &endPtr, 0);
+                break;
             }
-            break;
-        case 'c':
-            code_flag = 1;
-            while ((s = strtok(optarg, ", ")) != NULL) {
-                optarg = NULL;
-                if (code != NULL) {
-                    delete code;
-                    code = new byte[codeCount + 1];
-                } else {
-                    code = new byte[codeCount + 1];
+            case 'c': {
+                char *s;
+                code_flag = 1;
+                while ((s = strtok(optarg, ", ")) != NULL) {
+                    optarg = NULL;
+                    if (code != NULL) {
+                        delete code;
+                        code = new byte[codeCount + 1];
+                    } else {
+                        code = new byte[codeCount + 1];
+                    }
+                    code[codeCount++] = (byte)strtol(s, &endPtr, 0);
                 }
-                code[codeCount++] = (byte)strtol(s, &endPtr, 0);
+                break;
             }
-            break;
-        case 'C':
-            Code_flag = 1;
-            strcpy(Code_arg, optarg);
-            break;
-        case 'f':
-            freq_flag = 1;
-            frequency = atoi(optarg);
-            break;
-        case 't':
-            type_flag = 1;
-            strcpy(type_arg, optarg);
-            break;
-        case 'r':
-            read_flag = 1;
-            break;
-        case 's':
-            stop_flag = 1;
-            break;
-        case 'g':
-            get_flag = 1;
-            break;
-        case 'h':
-            usage(argv[0]);
-            exit(0);
-            break;
-        default:
-            usage(argv[0]);
-            exit(1);
-            break;
+            case 'C':
+                Code_flag = 1;
+                strcpy(Code_arg, optarg);
+                break;
+            case 'f':
+                freq_flag = 1;
+                frequency = atoi(optarg);
+                break;
+            case 't':
+                type_flag = 1;
+                strcpy(type_arg, optarg);
+                break;
+            case 'r':
+                read_flag = 1;
+                break;
+            case 's':
+                stop_flag = 1;
+                break;
+            case 'g':
+                get_flag = 1;
+                break;
+            case 'h':
+                usage(argv[0]);
+                exit(0);
+                break;
+            default:
+                usage(argv[0]);
+                exit(1);
+                break;
+            }
         }
     }
 
+    IR_FORMAT typeindex = IR_FORMAT_INVALID;
     if (type_flag) {
         const auto ret =
             std::find_if(std::begin(FORMATlist), std::end(FORMATlist),
@@ -227,7 +232,8 @@ int main(int argc, char *argv[]) {
 
     if (Code_flag) {
         str_len = strlen(Code_arg);
-        for (fi = 0; fi < str_len / 2; fi++) {
+        char hex_buff[5] = "\0";
+        for (auto fi = 0; fi < str_len / 2; fi++) {
             strcpy(hex_buff, "0x");
             strncat(hex_buff, &Code_arg[fi * 2], 2);
 
@@ -279,74 +285,91 @@ int main(int argc, char *argv[]) {
     }
 
     btoir *bto = bto_open();
-
-    if (data_flag) {
-        if ((ret = writeUSBIRData(bto, frequency, data, dataCount)) < 0)
-            fprintf(stderr, "error %d\n", ret);
-    } else if (code_flag || Code_flag) {
-        if ((ret = writeUSBIR(bto, typeindex, code, codeCount * 8)) < 0)
-            fprintf(stderr, "error %d\n", ret);
-    } else if (read_flag) {
-        if ((ret = recUSBIRData_Start(bto, frequency)) < 0)
-            fprintf(stderr, "error %d\n", ret);
-        else
-            fprintf(stdout, "受信を開始しました。\n");
-    } else if (stop_flag) {
-        if ((ret = recUSBIRData_Stop(bto)) < 0)
-            fprintf(stderr, "error %d\n", ret);
-        else
-            fprintf(stdout, "受信を停止しました。\n");
-    } else if (get_flag) {
-        data = new byte[MAX_BYTE_ARRAY_SIZE];
-
-        if ((ret = readUSBIRData(bto, data, MAX_BYTE_ARRAY_SIZE, &ibit_len)) < 0)
-            fprintf(stderr, "error %d\n", ret);
-        else {
-            fprintf(stderr, "取得したbyte配列の要素数:%d\n", ibit_len * 4);
-            if (ibit_len > 0) {
-                for (fi = 0; fi < ibit_len * 4 - 1; fi++)
-                    fprintf(stdout, "0x%02x,", data[fi]);
-                fprintf(stdout, "0x%02x", data[ibit_len * 4 - 1]);
+    const auto command =
+        [=]() {
+            int ret = 1;
+            if (data_flag) {
+                if ((ret = writeUSBIRData(bto, frequency, data, dataCount)) < 0)
+                    fprintf(stderr, "error %d\n", ret);
+                return ret;
             }
-        }
-    } else if (pla_flag) {
-        switch (plaindex) {
-        case Plarail_StopA:
-            if ((ret = writeUSBIR_Plarail_Stop(bto, PLARAIL_BAND_BAND_A)) < 0)
-                fprintf(stderr, "error %d\n", ret);
-            break;
-        case Plarail_StopB:
-            if ((ret = writeUSBIR_Plarail_Stop(bto, PLARAIL_BAND_BAND_B)) < 0)
-                fprintf(stderr, "error %d\n", ret);
-            break;
-        case Plarail_Speed_UpAF:
-            if ((ret = writeUSBIR_Plarail_Speed_Up(bto, PLARAIL_BAND_BAND_A, PLARAIL_DIRECTION_FORWARD)) < 0)
-                fprintf(stderr, "error %d\n", ret);
-            break;
-        case Plarail_Speed_UpAB:
-            if ((ret = writeUSBIR_Plarail_Speed_Up(bto, PLARAIL_BAND_BAND_A, PLARAIL_DIRECTION_BACKWARD)) < 0)
-                fprintf(stderr, "error %d\n", ret);
-            break;
-        case Plarail_Speed_UpBF:
-            if ((ret = writeUSBIR_Plarail_Speed_Up(bto, PLARAIL_BAND_BAND_B, PLARAIL_DIRECTION_FORWARD)) < 0)
-                fprintf(stderr, "error %d\n", ret);
-            break;
-        case Plarail_Speed_UpBB:
-            if ((ret = writeUSBIR_Plarail_Speed_Up(bto, PLARAIL_BAND_BAND_B, PLARAIL_DIRECTION_BACKWARD)) < 0)
-                fprintf(stderr, "error %d\n", ret);
-            break;
-        case Plarail_Speed_DownA:
-            if ((ret = writeUSBIR_Plarail_Speed_Down(bto, PLARAIL_BAND_BAND_A)) < 0)
-                fprintf(stderr, "error %d\n", ret);
-            break;
-        case Plarail_Speed_DownB:
-            if ((ret = writeUSBIR_Plarail_Speed_Down(bto, PLARAIL_BAND_BAND_B)) < 0)
-                fprintf(stderr, "error %d\n", ret);
-            break;
-        default:
-            break;
-        }
-    }
+            if (code_flag || Code_flag) {
+                if ((ret = writeUSBIR(bto, typeindex, code, codeCount * 8)) < 0)
+                    fprintf(stderr, "error %d\n", ret);
+                return ret;
+            }
+            if (read_flag) {
+                if ((ret = recUSBIRData_Start(bto, frequency)) < 0)
+                    fprintf(stderr, "error %d\n", ret);
+                else
+                    fprintf(stdout, "受信を開始しました。\n");
+                return ret;
+            }
+            if (stop_flag) {
+                if ((ret = recUSBIRData_Stop(bto)) < 0)
+                    fprintf(stderr, "error %d\n", ret);
+                else
+                    fprintf(stdout, "受信を停止しました。\n");
+                return ret;
+            }
+            if (get_flag) {
+                auto data = new byte[MAX_BYTE_ARRAY_SIZE];
+                uint ibit_len = 0;
+                if ((ret = readUSBIRData(bto, data, MAX_BYTE_ARRAY_SIZE, &ibit_len)) < 0)
+                    fprintf(stderr, "error %d\n", ret);
+                else {
+                    fprintf(stderr, "取得したbyte配列の要素数:%d\n", ibit_len * 4);
+                    if (ibit_len > 0) {
+                        for (auto fi = 0; fi < ibit_len * 4 - 1; fi++)
+                            fprintf(stdout, "0x%02x,", data[fi]);
+                        fprintf(stdout, "0x%02x", data[ibit_len * 4 - 1]);
+                    }
+                }
+                return ret;
+            }
+            if (pla_flag) {
+                switch (plaindex) {
+                case Plarail_StopA:
+                    if ((ret = writeUSBIR_Plarail_Stop(bto, PLARAIL_BAND_BAND_A)) < 0)
+                        fprintf(stderr, "error %d\n", ret);
+                    break;
+                case Plarail_StopB:
+                    if ((ret = writeUSBIR_Plarail_Stop(bto, PLARAIL_BAND_BAND_B)) < 0)
+                        fprintf(stderr, "error %d\n", ret);
+                    break;
+                case Plarail_Speed_UpAF:
+                    if ((ret = writeUSBIR_Plarail_Speed_Up(bto, PLARAIL_BAND_BAND_A, PLARAIL_DIRECTION_FORWARD)) < 0)
+                        fprintf(stderr, "error %d\n", ret);
+                    break;
+                case Plarail_Speed_UpAB:
+                    if ((ret = writeUSBIR_Plarail_Speed_Up(bto, PLARAIL_BAND_BAND_A, PLARAIL_DIRECTION_BACKWARD)) < 0)
+                        fprintf(stderr, "error %d\n", ret);
+                    break;
+                case Plarail_Speed_UpBF:
+                    if ((ret = writeUSBIR_Plarail_Speed_Up(bto, PLARAIL_BAND_BAND_B, PLARAIL_DIRECTION_FORWARD)) < 0)
+                        fprintf(stderr, "error %d\n", ret);
+                    break;
+                case Plarail_Speed_UpBB:
+                    if ((ret = writeUSBIR_Plarail_Speed_Up(bto, PLARAIL_BAND_BAND_B, PLARAIL_DIRECTION_BACKWARD)) < 0)
+                        fprintf(stderr, "error %d\n", ret);
+                    break;
+                case Plarail_Speed_DownA:
+                    if ((ret = writeUSBIR_Plarail_Speed_Down(bto, PLARAIL_BAND_BAND_A)) < 0)
+                        fprintf(stderr, "error %d\n", ret);
+                    break;
+                case Plarail_Speed_DownB:
+                    if ((ret = writeUSBIR_Plarail_Speed_Down(bto, PLARAIL_BAND_BAND_B)) < 0)
+                        fprintf(stderr, "error %d\n", ret);
+                    break;
+                default:
+                    break;
+                }
+                return ret;
+            }
+            return ret;
+        };
+
+    const auto ret = command();
 
     bto_close(bto);
 
