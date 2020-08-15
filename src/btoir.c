@@ -27,7 +27,6 @@ $ bto_advanced_USBIR_cmd --Plarail_Speed_UpAF
 
 */
 #include <errno.h>
-#include <getopt.h>
 #include <libusb.h>
 #include <stdio.h>
 #include <stdlib.h>
