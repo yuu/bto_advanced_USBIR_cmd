@@ -84,7 +84,7 @@ enum
     void bto_close(struct btoir *bto);
 
 int writeUSBIR(struct btoir *bto, enum IR_FORMAT format_type, byte code[], int code_len);
-int writeUSBIRData(struct btoir *bto, uint freq, byte data[], uint data_count);
+int writeUSBIRData(struct btoir *bto, uint freq, const byte *data, uint data_count);
 
 int writeUSBIR_Plarail_Stop(struct btoir *bto, uint band);
 int writeUSBIR_Plarail_Speed_Up(struct btoir *bto, uint band, uint dir);

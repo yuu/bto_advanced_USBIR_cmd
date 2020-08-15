@@ -131,8 +131,7 @@ int main(int argc, char *argv[]) {
     uint codeCount = 0;
     int str_len = 0;
 
-    byte *data = nullptr;
-    uint dataCount = 0;
+    std::vector<byte> data;
 
     int read_flag = 0;
     int stop_flag = 0;
@@ -159,14 +158,9 @@ int main(int argc, char *argv[]) {
                 char *s;
                 while ((s = strtok(optarg, ", ")) != NULL) {
                     optarg = NULL;
-                    if (!data) {
-                        delete data;
-                        data = new byte[dataCount + 1];
-                    } else {
-                        data = new byte[dataCount + 1];
-                    }
                     char *endPtr;
-                    data[dataCount++] = (byte)strtol(s, &endPtr, 0);
+                    const auto d = static_cast<byte>(strtol(s, &endPtr, 0));
+                    data.emplace_back(d);
                 }
                 break;
             }
@@ -241,20 +235,20 @@ int main(int argc, char *argv[]) {
     }
 
 #define RTH(cond, msg) \
-    [format, code_flag, Code_flag, data, plaindex, read_flag, stop_flag, get_flag, placounter, dataCount, str_len] \
+    [format, code_flag, Code_flag, &data, plaindex, read_flag, stop_flag, get_flag, placounter, str_len] \
         () { return std::make_tuple((cond), msg); }
 
     using namespace std::string_literals;
     const std::vector<std::function<std::tuple<bool, std::string>()>> rules = {
-        RTH((code_flag || Code_flag) && data, "エラー: -dオプションと-cまたは-Cオプションとは同時に指定できません。\n"s),
+        RTH((code_flag || Code_flag) && !(data.empty()), "エラー: -dオプションと-cまたは-Cオプションとは同時に指定できません。\n"s),
         RTH(code_flag && Code_flag, "エラー: -cオプションと-Cオプションとは同時に指定できません。\n"),
-        RTH((code_flag || Code_flag || data) && (read_flag || stop_flag || get_flag),
+        RTH((code_flag || Code_flag || !(data.empty())) && (read_flag || stop_flag || get_flag),
             "エラー: 送信系専用のオプション：-c、-C、-dオプションと受信系専用のオプション：-r、-s、-gオプションは同時に指定できません。\n"s),
         RTH((read_flag && stop_flag) || (stop_flag && get_flag) || (read_flag && get_flag), "エラー: -rオプション、-sオプション、-gオプションは同時に指定できません。\n"s),
         RTH(format && (!code_flag || !Code_flag), "エラー: -tオプションと-cまたは-Cオプションとは必ずセットで指定して下さい。\n"s),
-        RTH(plaindex && (data || code_flag || read_flag || stop_flag || get_flag), "エラー: プラレール赤外線命令オプションは単独で指定して下さい。\n"s),
+        RTH(plaindex && ((!data.empty()) || code_flag || read_flag || stop_flag || get_flag), "エラー: プラレール赤外線命令オプションは単独で指定して下さい。\n"s),
         RTH(placounter > 1, "エラー: プラレール赤外線命令オプションは単独で指定して下さい。\n"),
-        RTH(data && ((dataCount % 2) != 0), string_format("エラー: データの総数は偶数である必要があります。: %d\n", dataCount)),
+        RTH((data.size() % 2) != 0, string_format("エラー: データの総数は偶数である必要があります。: %d\n", data.size())),
         RTH(!format && format == IR_FORMAT_INVALID, "エラー: 正しい赤外線フォーマットのタイプを指定して下さい。\n"s),
         RTH(Code_flag && (str_len % 2) != 0, string_format("エラー: コード長は2の倍数である必要があります。: %d\n", str_len)),
     };
@@ -272,7 +266,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if ((!format) && (!code_flag) && (!Code_flag) && (!data) && (!plaindex) && (!read_flag) &&
+    if ((!format) && (!code_flag) && (!Code_flag) && data.empty() && (!plaindex) && (!read_flag) &&
         (!stop_flag) && (!get_flag)) {
         usage(argv[0]);
         exit(1);
@@ -286,8 +280,8 @@ int main(int argc, char *argv[]) {
     const auto command =
         [=]() {
             int ret = 1;
-            if (data) {
-                if ((ret = writeUSBIRData(bto, frequency, data, dataCount)) < 0)
+            if (!data.empty()) {
+                if ((ret = writeUSBIRData(bto, frequency, data.data(), data.size())) < 0)
                     fprintf(stderr, "error %d\n", ret);
                 return ret;
             }

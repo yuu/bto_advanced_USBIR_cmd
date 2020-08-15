@@ -334,7 +334,7 @@ static int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint b
     return i_ret;
 }
 
-int writeUSBIRData(struct btoir *bto, uint freq, byte data[], uint data_count) {
+int writeUSBIRData(struct btoir *bto, uint freq, const byte *data, uint data_count) {
     struct libusb_device_handle *devh = bto->dev_handle;
     uint fi;
     int i_ret = -1;
