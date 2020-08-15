@@ -36,8 +36,8 @@ $ bto_advanced_USBIR_cmd --Plarail_Speed_UpAF
 
 #include "btoir.h"
 
-static void close_device(libusb_context *ctx, libusb_device_handle *devh);
 static libusb_device_handle *open_device(libusb_context *ctx);
+static void close_device(libusb_context *ctx, libusb_device_handle *devh);
 static int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint bit_0, uint bit_1, uint stop_code,
                           const byte *code, uint bit_len);
 
@@ -69,75 +69,6 @@ struct btoir *bto_open() {
 void bto_close(struct btoir *bto) {
     close_device(bto->ctx, bto->dev_handle);
     free(bto);
-}
-
-static void close_device(libusb_context *ctx, libusb_device_handle *devh) {
-    libusb_close(devh);
-    libusb_exit(ctx);
-}
-
-static libusb_device_handle *open_device(libusb_context *ctx) {
-    struct libusb_device_handle *devh = NULL;
-    libusb_device *dev;
-    libusb_device **devs;
-
-    int r = 1;
-    int i = 0;
-    int cnt = 0;
-
-    if ((libusb_get_device_list(ctx, &devs)) < 0) {
-        perror("no usb device found");
-        return NULL;
-    }
-
-    /* check every usb devices */
-    while ((dev = devs[i++]) != NULL) {
-        struct libusb_device_descriptor desc;
-        if (libusb_get_device_descriptor(dev, &desc) < 0) {
-            perror("failed to get device descriptor\n");
-        }
-        /* count how many device connected */
-        if (desc.idVendor == VENDOR_ID && desc.idProduct == PRODUCT_ID) {
-            cnt++;
-        }
-    }
-
-    /* device not found */
-    if (cnt == 0) {
-        fprintf(stderr, "device not connected\n");
-        return NULL;
-    }
-
-    if (cnt > 1) {
-        fprintf(stderr, "multi device is not implemented yet\n");
-        return NULL;
-    }
-
-    /* open device */
-    if ((devh = libusb_open_device_with_vid_pid(ctx, VENDOR_ID, PRODUCT_ID)) == NULL) {
-        perror("can't find device\n");
-        close_device(ctx, devh);
-        return NULL;
-    }
-
-    /* detach kernel driver if attached. */
-    r = libusb_kernel_driver_active(devh, 3);
-    if (r == 1) {
-        /* detaching kernel driver */
-        r = libusb_detach_kernel_driver(devh, 3);
-        if (r != 0) {
-            perror("detaching kernel driver failed");
-            return NULL;
-        }
-    }
-
-    r = libusb_claim_interface(devh, 3);
-    if (r < 0) {
-        fprintf(stderr, "claim interface failed (%d): %s\n", r, strerror(errno));
-        return NULL;
-    }
-
-    return devh;
 }
 
 int bto_write_code(struct btoir *bto, enum IR_FORMAT format_type, const byte *code, int code_len) {
@@ -183,136 +114,6 @@ int bto_write_code(struct btoir *bto, enum IR_FORMAT format_type, const byte *co
     } else {  // パラメータエラー
         i_ret = -2;
     }
-    return i_ret;
-}
-
-static int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint bit_0, uint bit_1, uint stop_code,
-                          const byte *code, uint bit_len) {
-    struct libusb_device_handle *devh = bto->dev_handle;
-    uint fi;
-    int byte_pos, bit_pos, bit_mask, tmp_data;
-    int i_ret = -1;
-    byte outbuffer[BUFF_SIZE];
-    byte inbuffer[BUFF_SIZE];
-    int BytesWritten = 0;
-    int BytesRead = 0;
-    bool error_flag = false;
-    uint send_bit_num = 1 + bit_len + 1;  // 送信ビット数　リーダーコード(1) + コード + 終了コード(1)
-    uint send_bit_pos = 0;                // 送信セット済みビット位置
-    uint set_bit_size = 0;
-
-    int code_len_check = (int)(bit_len / 8);
-    if ((bit_len % 8) > 0) {
-        code_len_check++;
-    }
-    // パラメータチェック
-    assert(devh != NULL);
-    if (!(IR_FREQ_MIN <= freq && freq <= IR_FREQ_MAX))
-        return -2;
-    if (!(0 < bit_len && bit_len <= (IR_SEND_DATA_MAX_LEN * 8)))
-        return -2;
-
-    // データセット
-    while (true) {
-        outbuffer[0] = 0x34;
-        //送信総ビット数
-        outbuffer[1] = (byte)((send_bit_num >> 8) & 0xFF);
-        outbuffer[2] = (byte)(send_bit_num & 0xFF);
-        outbuffer[3] = (byte)((send_bit_pos >> 8) & 0xFF);
-        outbuffer[4] = (byte)(send_bit_pos & 0xFF);
-        if (send_bit_num > send_bit_pos) {
-            set_bit_size = send_bit_num - send_bit_pos;
-            if (set_bit_size > IR_SEND_DATA_USB_SEND_MAX_LEN) {
-                set_bit_size = IR_SEND_DATA_USB_SEND_MAX_LEN;
-            }
-        } else {  // 送信データなし
-            set_bit_size = 0;
-        }
-        outbuffer[5] = (byte)(set_bit_size & 0xFF);
-
-        if (set_bit_size <= 0)
-            break;
-
-        // データセット
-        // 赤外線コードコピー
-        for (fi = 0; fi < set_bit_size; fi++) {
-            if (send_bit_pos == 0) {  // Reader Code
-                // ON Count
-                outbuffer[6 + (fi * 4)] = (byte)((reader_code >> 24) & 0xFF);
-                outbuffer[6 + (fi * 4) + 1] = (byte)((reader_code >> 16) & 0xFF);
-                // OFF Count
-                outbuffer[6 + (fi * 4) + 2] = (byte)((reader_code >> 8) & 0xFF);
-                outbuffer[6 + (fi * 4) + 3] = (byte)(reader_code & 0xFF);
-            } else if (send_bit_pos == (send_bit_num - 1)) {  // Stop Code
-                // ON Count
-                outbuffer[6 + (fi * 4)] = (byte)((stop_code >> 24) & 0xFF);
-                outbuffer[6 + (fi * 4) + 1] = (byte)((stop_code >> 16) & 0xFF);
-                // OFF Count
-                outbuffer[6 + (fi * 4) + 2] = (byte)((stop_code >> 8) & 0xFF);
-                outbuffer[6 + (fi * 4) + 3] = (byte)(stop_code & 0xFF);
-            } else {
-                byte_pos = (int)(send_bit_pos - 1) / 8;
-                bit_pos = (int)(send_bit_pos - 1) % 8;
-                bit_mask = 0x01 << bit_pos;
-                tmp_data = code[byte_pos];
-
-                if ((tmp_data & bit_mask & 0xFF) != 0) {  // Bit 1
-                    // ON Count
-                    outbuffer[6 + (fi * 4)] = (byte)((bit_1 >> 24) & 0xFF);
-                    outbuffer[6 + (fi * 4) + 1] = (byte)((bit_1 >> 16) & 0xFF);
-                    // OFF Count
-                    outbuffer[6 + (fi * 4) + 2] = (byte)((bit_1 >> 8) & 0xFF);
-                    outbuffer[6 + (fi * 4) + 3] = (byte)(bit_1 & 0xFF);
-                } else {  // bit 0
-                    // ON Count
-                    outbuffer[6 + (fi * 4)] = (byte)((bit_0 >> 24) & 0xFF);
-                    outbuffer[6 + (fi * 4) + 1] = (byte)((bit_0 >> 16) & 0xFF);
-                    // OFF Count
-                    outbuffer[6 + (fi * 4) + 2] = (byte)((bit_0 >> 8) & 0xFF);
-                    outbuffer[6 + (fi * 4) + 3] = (byte)(bit_0 & 0xFF);
-                }
-            }
-            send_bit_pos++;
-        }
-        if (libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE, &BytesWritten, 5000) != 0) {
-            error_flag = true;
-            continue;
-        }
-        // Now get the response packet from the firmware.
-        if (libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) != 0) {
-            error_flag = true;
-            continue;
-        }
-        // INBuffer[0] is an echo back of the command (see microcontroller firmware).
-        // INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).
-        if (inbuffer[0] == 0x34 && inbuffer[1] != 0x00) {
-            error_flag = true;
-        }
-    }
-
-    // データ送信要求セット
-    if (error_flag)
-        return -3;
-
-    outbuffer[0] = 0x35;  // 0x81 is the "Get Pushbutton State" command in the firmware
-    outbuffer[1] = (byte)((freq >> 8) & 0xFF);
-    outbuffer[2] = (byte)(freq & 0xFF);
-    outbuffer[3] = (byte)((send_bit_num >> 8) & 0xFF);
-    outbuffer[4] = (byte)(send_bit_num & 0xFF);
-
-    // To get the pushbutton state, first, we send a packet with our "Get Pushbutton State" command in it.
-    if (libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE, &BytesWritten, 5000) != 0)
-        return -4;
-
-    // Now get the response packet from the firmware.
-    if (libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) != 0)
-        return -5;
-
-    // INBuffer[0] is an echo back of the command (see microcontroller firmware).
-    // INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).
-    if (inbuffer[0] == 0x35 && inbuffer[1] == 0x00)
-        return 0;
-
     return i_ret;
 }
 
@@ -556,6 +357,205 @@ int bto_dump_record(struct btoir *bto, byte data[], uint data_buff_len, uint *bi
             }
         }
     }
+
+    return i_ret;
+}
+
+static libusb_device_handle *open_device(libusb_context *ctx) {
+    struct libusb_device_handle *devh = NULL;
+    libusb_device *dev;
+    libusb_device **devs;
+
+    int r = 1;
+    int i = 0;
+    int cnt = 0;
+
+    if ((libusb_get_device_list(ctx, &devs)) < 0) {
+        perror("no usb device found");
+        return NULL;
+    }
+
+    /* check every usb devices */
+    while ((dev = devs[i++]) != NULL) {
+        struct libusb_device_descriptor desc;
+        if (libusb_get_device_descriptor(dev, &desc) < 0) {
+            perror("failed to get device descriptor\n");
+        }
+        /* count how many device connected */
+        if (desc.idVendor == VENDOR_ID && desc.idProduct == PRODUCT_ID) {
+            cnt++;
+        }
+    }
+
+    /* device not found */
+    if (cnt == 0) {
+        fprintf(stderr, "device not connected\n");
+        return NULL;
+    }
+
+    if (cnt > 1) {
+        fprintf(stderr, "multi device is not implemented yet\n");
+        return NULL;
+    }
+
+    /* open device */
+    if ((devh = libusb_open_device_with_vid_pid(ctx, VENDOR_ID, PRODUCT_ID)) == NULL) {
+        perror("can't find device\n");
+        close_device(ctx, devh);
+        return NULL;
+    }
+
+    /* detach kernel driver if attached. */
+    r = libusb_kernel_driver_active(devh, 3);
+    if (r == 1) {
+        /* detaching kernel driver */
+        r = libusb_detach_kernel_driver(devh, 3);
+        if (r != 0) {
+            perror("detaching kernel driver failed");
+            return NULL;
+        }
+    }
+
+    r = libusb_claim_interface(devh, 3);
+    if (r < 0) {
+        fprintf(stderr, "claim interface failed (%d): %s\n", r, strerror(errno));
+        return NULL;
+    }
+
+    return devh;
+}
+
+static void close_device(libusb_context *ctx, libusb_device_handle *devh) {
+    libusb_close(devh);
+    libusb_exit(ctx);
+}
+
+static int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint bit_0, uint bit_1, uint stop_code,
+                          const byte *code, uint bit_len) {
+    struct libusb_device_handle *devh = bto->dev_handle;
+    uint fi;
+    int byte_pos, bit_pos, bit_mask, tmp_data;
+    int i_ret = -1;
+    byte outbuffer[BUFF_SIZE];
+    byte inbuffer[BUFF_SIZE];
+    int BytesWritten = 0;
+    int BytesRead = 0;
+    bool error_flag = false;
+    uint send_bit_num = 1 + bit_len + 1;  // 送信ビット数　リーダーコード(1) + コード + 終了コード(1)
+    uint send_bit_pos = 0;                // 送信セット済みビット位置
+    uint set_bit_size = 0;
+
+    int code_len_check = (int)(bit_len / 8);
+    if ((bit_len % 8) > 0) {
+        code_len_check++;
+    }
+    // パラメータチェック
+    assert(devh != NULL);
+    if (!(IR_FREQ_MIN <= freq && freq <= IR_FREQ_MAX))
+        return -2;
+    if (!(0 < bit_len && bit_len <= (IR_SEND_DATA_MAX_LEN * 8)))
+        return -2;
+
+    // データセット
+    while (true) {
+        outbuffer[0] = 0x34;
+        //送信総ビット数
+        outbuffer[1] = (byte)((send_bit_num >> 8) & 0xFF);
+        outbuffer[2] = (byte)(send_bit_num & 0xFF);
+        outbuffer[3] = (byte)((send_bit_pos >> 8) & 0xFF);
+        outbuffer[4] = (byte)(send_bit_pos & 0xFF);
+        if (send_bit_num > send_bit_pos) {
+            set_bit_size = send_bit_num - send_bit_pos;
+            if (set_bit_size > IR_SEND_DATA_USB_SEND_MAX_LEN) {
+                set_bit_size = IR_SEND_DATA_USB_SEND_MAX_LEN;
+            }
+        } else {  // 送信データなし
+            set_bit_size = 0;
+        }
+        outbuffer[5] = (byte)(set_bit_size & 0xFF);
+
+        if (set_bit_size <= 0)
+            break;
+
+        // データセット
+        // 赤外線コードコピー
+        for (fi = 0; fi < set_bit_size; fi++) {
+            if (send_bit_pos == 0) {  // Reader Code
+                // ON Count
+                outbuffer[6 + (fi * 4)] = (byte)((reader_code >> 24) & 0xFF);
+                outbuffer[6 + (fi * 4) + 1] = (byte)((reader_code >> 16) & 0xFF);
+                // OFF Count
+                outbuffer[6 + (fi * 4) + 2] = (byte)((reader_code >> 8) & 0xFF);
+                outbuffer[6 + (fi * 4) + 3] = (byte)(reader_code & 0xFF);
+            } else if (send_bit_pos == (send_bit_num - 1)) {  // Stop Code
+                // ON Count
+                outbuffer[6 + (fi * 4)] = (byte)((stop_code >> 24) & 0xFF);
+                outbuffer[6 + (fi * 4) + 1] = (byte)((stop_code >> 16) & 0xFF);
+                // OFF Count
+                outbuffer[6 + (fi * 4) + 2] = (byte)((stop_code >> 8) & 0xFF);
+                outbuffer[6 + (fi * 4) + 3] = (byte)(stop_code & 0xFF);
+            } else {
+                byte_pos = (int)(send_bit_pos - 1) / 8;
+                bit_pos = (int)(send_bit_pos - 1) % 8;
+                bit_mask = 0x01 << bit_pos;
+                tmp_data = code[byte_pos];
+
+                if ((tmp_data & bit_mask & 0xFF) != 0) {  // Bit 1
+                    // ON Count
+                    outbuffer[6 + (fi * 4)] = (byte)((bit_1 >> 24) & 0xFF);
+                    outbuffer[6 + (fi * 4) + 1] = (byte)((bit_1 >> 16) & 0xFF);
+                    // OFF Count
+                    outbuffer[6 + (fi * 4) + 2] = (byte)((bit_1 >> 8) & 0xFF);
+                    outbuffer[6 + (fi * 4) + 3] = (byte)(bit_1 & 0xFF);
+                } else {  // bit 0
+                    // ON Count
+                    outbuffer[6 + (fi * 4)] = (byte)((bit_0 >> 24) & 0xFF);
+                    outbuffer[6 + (fi * 4) + 1] = (byte)((bit_0 >> 16) & 0xFF);
+                    // OFF Count
+                    outbuffer[6 + (fi * 4) + 2] = (byte)((bit_0 >> 8) & 0xFF);
+                    outbuffer[6 + (fi * 4) + 3] = (byte)(bit_0 & 0xFF);
+                }
+            }
+            send_bit_pos++;
+        }
+        if (libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE, &BytesWritten, 5000) != 0) {
+            error_flag = true;
+            continue;
+        }
+        // Now get the response packet from the firmware.
+        if (libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) != 0) {
+            error_flag = true;
+            continue;
+        }
+        // INBuffer[0] is an echo back of the command (see microcontroller firmware).
+        // INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).
+        if (inbuffer[0] == 0x34 && inbuffer[1] != 0x00) {
+            error_flag = true;
+        }
+    }
+
+    // データ送信要求セット
+    if (error_flag)
+        return -3;
+
+    outbuffer[0] = 0x35;  // 0x81 is the "Get Pushbutton State" command in the firmware
+    outbuffer[1] = (byte)((freq >> 8) & 0xFF);
+    outbuffer[2] = (byte)(freq & 0xFF);
+    outbuffer[3] = (byte)((send_bit_num >> 8) & 0xFF);
+    outbuffer[4] = (byte)(send_bit_num & 0xFF);
+
+    // To get the pushbutton state, first, we send a packet with our "Get Pushbutton State" command in it.
+    if (libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE, &BytesWritten, 5000) != 0)
+        return -4;
+
+    // Now get the response packet from the firmware.
+    if (libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) != 0)
+        return -5;
+
+    // INBuffer[0] is an echo back of the command (see microcontroller firmware).
+    // INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).
+    if (inbuffer[0] == 0x35 && inbuffer[1] == 0x00)
+        return 0;
 
     return i_ret;
 }
