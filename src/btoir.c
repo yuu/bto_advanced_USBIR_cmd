@@ -206,130 +206,113 @@ static int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint b
         code_len_check++;
     }
     // パラメータチェック
-    if (devh != NULL && IR_FREQ_MIN <= freq && freq <= IR_FREQ_MAX && 0 < bit_len &&
-        bit_len <= (IR_SEND_DATA_MAX_LEN * 8)) {
+    assert(devh != NULL);
+    if (!(IR_FREQ_MIN <= freq && freq <= IR_FREQ_MAX))
+        return -2;
+    if (!(0 < bit_len && bit_len <= (IR_SEND_DATA_MAX_LEN * 8)))
+        return -2;
+
+    // データセット
+    while (true) {
+        outbuffer[0] = 0x34;
+        //送信総ビット数
+        outbuffer[1] = (byte)((send_bit_num >> 8) & 0xFF);
+        outbuffer[2] = (byte)(send_bit_num & 0xFF);
+        outbuffer[3] = (byte)((send_bit_pos >> 8) & 0xFF);
+        outbuffer[4] = (byte)(send_bit_pos & 0xFF);
+        if (send_bit_num > send_bit_pos) {
+            set_bit_size = send_bit_num - send_bit_pos;
+            if (set_bit_size > IR_SEND_DATA_USB_SEND_MAX_LEN) {
+                set_bit_size = IR_SEND_DATA_USB_SEND_MAX_LEN;
+            }
+        } else {  // 送信データなし
+            set_bit_size = 0;
+        }
+        outbuffer[5] = (byte)(set_bit_size & 0xFF);
+
+        if (set_bit_size <= 0)
+            break;
+
         // データセット
-        while (true) {
-            outbuffer[0] = 0x34;
-            //送信総ビット数
-            outbuffer[1] = (byte)((send_bit_num >> 8) & 0xFF);
-            outbuffer[2] = (byte)(send_bit_num & 0xFF);
-            outbuffer[3] = (byte)((send_bit_pos >> 8) & 0xFF);
-            outbuffer[4] = (byte)(send_bit_pos & 0xFF);
-            if (send_bit_num > send_bit_pos) {
-                set_bit_size = send_bit_num - send_bit_pos;
-                if (set_bit_size > IR_SEND_DATA_USB_SEND_MAX_LEN) {
-                    set_bit_size = IR_SEND_DATA_USB_SEND_MAX_LEN;
-                }
-            } else {  // 送信データなし
-                set_bit_size = 0;
-            }
-            outbuffer[5] = (byte)(set_bit_size & 0xFF);
-
-            if (set_bit_size > 0) {
-                // データセット
-                // 赤外線コードコピー
-                for (fi = 0; fi < set_bit_size; fi++) {
-                    if (send_bit_pos == 0) {  // Reader Code
-                        // ON Count
-                        outbuffer[6 + (fi * 4)] = (byte)((reader_code >> 24) & 0xFF);
-                        outbuffer[6 + (fi * 4) + 1] = (byte)((reader_code >> 16) & 0xFF);
-                        // OFF Count
-                        outbuffer[6 + (fi * 4) + 2] = (byte)((reader_code >> 8) & 0xFF);
-                        outbuffer[6 + (fi * 4) + 3] = (byte)(reader_code & 0xFF);
-                    } else if (send_bit_pos == (send_bit_num - 1)) {  // Stop Code
-                        // ON Count
-                        outbuffer[6 + (fi * 4)] = (byte)((stop_code >> 24) & 0xFF);
-                        outbuffer[6 + (fi * 4) + 1] = (byte)((stop_code >> 16) & 0xFF);
-                        // OFF Count
-                        outbuffer[6 + (fi * 4) + 2] = (byte)((stop_code >> 8) & 0xFF);
-                        outbuffer[6 + (fi * 4) + 3] = (byte)(stop_code & 0xFF);
-                    } else {
-                        byte_pos = (int)(send_bit_pos - 1) / 8;
-                        bit_pos = (int)(send_bit_pos - 1) % 8;
-                        bit_mask = 0x01 << bit_pos;
-                        tmp_data = code[byte_pos];
-
-                        if ((tmp_data & bit_mask & 0xFF) != 0) {  // Bit 1
-                            // ON Count
-                            outbuffer[6 + (fi * 4)] = (byte)((bit_1 >> 24) & 0xFF);
-                            outbuffer[6 + (fi * 4) + 1] = (byte)((bit_1 >> 16) & 0xFF);
-                            // OFF Count
-                            outbuffer[6 + (fi * 4) + 2] = (byte)((bit_1 >> 8) & 0xFF);
-                            outbuffer[6 + (fi * 4) + 3] = (byte)(bit_1 & 0xFF);
-                        } else {  // bit 0
-                            // ON Count
-                            outbuffer[6 + (fi * 4)] = (byte)((bit_0 >> 24) & 0xFF);
-                            outbuffer[6 + (fi * 4) + 1] = (byte)((bit_0 >> 16) & 0xFF);
-                            // OFF Count
-                            outbuffer[6 + (fi * 4) + 2] = (byte)((bit_0 >> 8) & 0xFF);
-                            outbuffer[6 + (fi * 4) + 3] = (byte)(bit_0 & 0xFF);
-                        }
-                    }
-                    send_bit_pos++;
-                }
-                if (libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE, &BytesWritten, 5000) == 0) {
-                    // Now get the response packet from the firmware.
-                    if (libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) == 0) {
-                        // INBuffer[0] is an echo back of the command (see microcontroller firmware).
-                        // INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller
-                        // firmware).
-                        if (inbuffer[0] == 0x34) {
-                            if (inbuffer[1] != 0x00) {
-                                // NG
-                                error_flag = true;
-                            }
-                        }
-                    } else {
-                        // NG
-                        error_flag = true;
-                    }
-                } else {
-                    // NG
-                    error_flag = true;
-                }
-
-            } else {  // 送信データなし
-                break;
-            }
-        }
-
-        // データ送信要求セット
-        if (error_flag == false) {
-            outbuffer[0] = 0x35;  // 0x81 is the "Get Pushbutton State" command in the firmware
-            outbuffer[1] = (byte)((freq >> 8) & 0xFF);
-            outbuffer[2] = (byte)(freq & 0xFF);
-            outbuffer[3] = (byte)((send_bit_num >> 8) & 0xFF);
-            outbuffer[4] = (byte)(send_bit_num & 0xFF);
-
-            // To get the pushbutton state, first, we send a packet with our "Get Pushbutton State" command in it.
-            if (libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE, &BytesWritten, 5000) == 0) {
-                // Now get the response packet from the firmware.
-                if (libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) == 0) {
-                    // INBuffer[0] is an echo back of the command (see microcontroller firmware).
-                    // INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).
-                    if (inbuffer[0] == 0x35) {
-                        if (inbuffer[1] == 0x00) {  // OK
-                            i_ret = 0;
-                        } else {
-                            // NG
-                            error_flag = true;
-                        }
-                    }
-                } else {
-                    // NG
-                    i_ret = -5;
-                }
+        // 赤外線コードコピー
+        for (fi = 0; fi < set_bit_size; fi++) {
+            if (send_bit_pos == 0) {  // Reader Code
+                // ON Count
+                outbuffer[6 + (fi * 4)] = (byte)((reader_code >> 24) & 0xFF);
+                outbuffer[6 + (fi * 4) + 1] = (byte)((reader_code >> 16) & 0xFF);
+                // OFF Count
+                outbuffer[6 + (fi * 4) + 2] = (byte)((reader_code >> 8) & 0xFF);
+                outbuffer[6 + (fi * 4) + 3] = (byte)(reader_code & 0xFF);
+            } else if (send_bit_pos == (send_bit_num - 1)) {  // Stop Code
+                // ON Count
+                outbuffer[6 + (fi * 4)] = (byte)((stop_code >> 24) & 0xFF);
+                outbuffer[6 + (fi * 4) + 1] = (byte)((stop_code >> 16) & 0xFF);
+                // OFF Count
+                outbuffer[6 + (fi * 4) + 2] = (byte)((stop_code >> 8) & 0xFF);
+                outbuffer[6 + (fi * 4) + 3] = (byte)(stop_code & 0xFF);
             } else {
-                // NG
-                i_ret = -4;
+                byte_pos = (int)(send_bit_pos - 1) / 8;
+                bit_pos = (int)(send_bit_pos - 1) % 8;
+                bit_mask = 0x01 << bit_pos;
+                tmp_data = code[byte_pos];
+
+                if ((tmp_data & bit_mask & 0xFF) != 0) {  // Bit 1
+                    // ON Count
+                    outbuffer[6 + (fi * 4)] = (byte)((bit_1 >> 24) & 0xFF);
+                    outbuffer[6 + (fi * 4) + 1] = (byte)((bit_1 >> 16) & 0xFF);
+                    // OFF Count
+                    outbuffer[6 + (fi * 4) + 2] = (byte)((bit_1 >> 8) & 0xFF);
+                    outbuffer[6 + (fi * 4) + 3] = (byte)(bit_1 & 0xFF);
+                } else {  // bit 0
+                    // ON Count
+                    outbuffer[6 + (fi * 4)] = (byte)((bit_0 >> 24) & 0xFF);
+                    outbuffer[6 + (fi * 4) + 1] = (byte)((bit_0 >> 16) & 0xFF);
+                    // OFF Count
+                    outbuffer[6 + (fi * 4) + 2] = (byte)((bit_0 >> 8) & 0xFF);
+                    outbuffer[6 + (fi * 4) + 3] = (byte)(bit_0 & 0xFF);
+                }
             }
-        } else {  // データセットエラー
-            i_ret = -3;
+            send_bit_pos++;
         }
-    } else {  // パラメータエラー
-        i_ret = -2;
+        if (libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE, &BytesWritten, 5000) != 0) {
+            error_flag = true;
+            continue;
+        }
+        // Now get the response packet from the firmware.
+        if (libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) != 0) {
+            error_flag = true;
+            continue;
+        }
+        // INBuffer[0] is an echo back of the command (see microcontroller firmware).
+        // INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).
+        if (inbuffer[0] == 0x34 && inbuffer[1] != 0x00) {
+            error_flag = true;
+        }
     }
+
+    // データ送信要求セット
+    if (error_flag)
+        return -3;
+
+    outbuffer[0] = 0x35;  // 0x81 is the "Get Pushbutton State" command in the firmware
+    outbuffer[1] = (byte)((freq >> 8) & 0xFF);
+    outbuffer[2] = (byte)(freq & 0xFF);
+    outbuffer[3] = (byte)((send_bit_num >> 8) & 0xFF);
+    outbuffer[4] = (byte)(send_bit_num & 0xFF);
+
+    // To get the pushbutton state, first, we send a packet with our "Get Pushbutton State" command in it.
+    if (libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE, &BytesWritten, 5000) != 0)
+        return -4;
+
+    // Now get the response packet from the firmware.
+    if (libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) != 0)
+        return -5;
+
+    // INBuffer[0] is an echo back of the command (see microcontroller firmware).
+    // INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).
+    if (inbuffer[0] == 0x35 && inbuffer[1] == 0x00)
+        return 0;
+
     return i_ret;
 }
 
