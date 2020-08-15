@@ -127,9 +127,7 @@ int main(int argc, char *argv[]) {
 
     int code_flag = 0;
     int Code_flag = 0;
-    byte *code = nullptr;
-    uint codeCount = 0;
-    int str_len = 0;
+    std::vector<byte> code;
 
     std::vector<byte> data;
 
@@ -167,36 +165,28 @@ int main(int argc, char *argv[]) {
             case 'c': {
                 char *s;
                 code_flag = 1;
+                std::vector<byte> tmp;
                 while ((s = strtok(optarg, ", ")) != NULL) {
                     optarg = NULL;
-                    if (code != NULL) {
-                        delete code;
-                        code = new byte[codeCount + 1];
-                    } else {
-                        code = new byte[codeCount + 1];
-                    }
                     char *endPtr;
-                    code[codeCount++] = (byte)strtol(s, &endPtr, 0);
+                    const auto d = static_cast<byte>(strtol(s, &endPtr, 0));
+                    tmp.emplace_back(d);
                 }
+                code = std::move(tmp);
                 break;
             }
             case 'C': {
                 Code_flag = 1;
-                str_len = strlen(optarg);
-                char hex_buff[5] = "\0";
+                const auto str_len = strlen(optarg);
+                std::vector<byte> tmp;
                 for (auto fi = 0; fi < str_len / 2; fi++) {
-                    strcpy(hex_buff, "0x");
+                    char hex_buff[5] = "0x";
                     strncat(hex_buff, &optarg[fi * 2], 2);
-
-                    if (code != NULL) {
-                        delete code;
-                        code = new byte[codeCount + 1];
-                    } else {
-                        code = new byte[codeCount + 1];
-                    }
                     char *endPtr;
-                    code[codeCount++] = (byte)strtol(hex_buff, &endPtr, 0);
+                    const auto d = static_cast<byte>(strtol(hex_buff, &endPtr, 0));
+                    tmp.emplace_back(d);
                 }
+                code = std::move(tmp);
                 break;
             }
             case 'f':
@@ -235,7 +225,7 @@ int main(int argc, char *argv[]) {
     }
 
 #define RTH(cond, msg) \
-    [format, code_flag, Code_flag, &data, plaindex, read_flag, stop_flag, get_flag, placounter, str_len] \
+    [format, code_flag, Code_flag, &data, plaindex, read_flag, stop_flag, get_flag, placounter, &code] \
         () { return std::make_tuple((cond), msg); }
 
     using namespace std::string_literals;
@@ -250,7 +240,7 @@ int main(int argc, char *argv[]) {
         RTH(placounter > 1, "エラー: プラレール赤外線命令オプションは単独で指定して下さい。\n"),
         RTH((data.size() % 2) != 0, string_format("エラー: データの総数は偶数である必要があります。: %d\n", data.size())),
         RTH(!format && format == IR_FORMAT_INVALID, "エラー: 正しい赤外線フォーマットのタイプを指定して下さい。\n"s),
-        RTH(Code_flag && (str_len % 2) != 0, string_format("エラー: コード長は2の倍数である必要があります。: %d\n", str_len)),
+        RTH(Code_flag && (code.size() % 2) != 0, string_format("エラー: コード長は2の倍数である必要があります。: %d\n", code.size())),
     };
 #undef RTH
 
@@ -286,7 +276,7 @@ int main(int argc, char *argv[]) {
                 return ret;
             }
             if (code_flag || Code_flag) {
-                if ((ret = writeUSBIR(bto, *format, code, codeCount * 8)) < 0)
+                if ((ret = writeUSBIR(bto, *format, code.data(), code.size() * 8)) < 0)
                     fprintf(stderr, "error %d\n", ret);
                 return ret;
             }
