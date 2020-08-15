@@ -26,19 +26,20 @@ $ bto_advanced_USBIR_cmd --Plarail_Speed_UpAF
 移植作業者: disklessfun@gmail.com
 
 */
+#include <assert.h>
 #include <errno.h>
 #include <libusb.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <assert.h>
 
 #include "btoir.h"
 
 void close_device(libusb_context *ctx, libusb_device_handle *devh);
-libusb_device_handle* open_device(libusb_context *ctx);
-static int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint bit_0, uint bit_1, uint stop_code, const byte *code, uint bit_len);
+libusb_device_handle *open_device(libusb_context *ctx);
+static int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint bit_0, uint bit_1, uint stop_code,
+                          const byte *code, uint bit_len);
 
 struct btoir {
     libusb_context *ctx;
@@ -185,8 +186,8 @@ int writeUSBIR(struct btoir *bto, enum IR_FORMAT format_type, const byte *code, 
     return i_ret;
 }
 
-static int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint bit_0, uint bit_1,
-                          uint stop_code, const byte *code, uint bit_len) {
+static int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint bit_0, uint bit_1, uint stop_code,
+                          const byte *code, uint bit_len) {
     struct libusb_device_handle *devh = bto->dev_handle;
     uint fi;
     int byte_pos, bit_pos, bit_mask, tmp_data;

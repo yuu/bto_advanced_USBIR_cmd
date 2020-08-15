@@ -10,8 +10,8 @@ typedef unsigned short ushort;
 
 #ifndef __cplusplus
 typedef unsigned char bool;
-#define true	1
-#define false	0
+#define true 1
+#define false 0
 #endif
 
 #ifdef __cplusplus

@@ -6,11 +6,17 @@
 extern "C" {
 #endif
 
-enum { PLARAIL_BAND_BAND_A = 1, PLARAIL_BAND_BAND_B };
+enum PLARAIL_BAND {
+    PLARAIL_BAND_BAND_A = 1,
+    PLARAIL_BAND_BAND_B,
+};
 
-enum { PLARAIL_DIRECTION_FORWARD = 1, PLARAIL_DIRECTION_BACKWARD };
+enum PLARAIL_DIRECTION {
+    PLARAIL_DIRECTION_FORWARD = 1,
+    PLARAIL_DIRECTION_BACKWARD,
+};
 
-enum {
+enum Plarail {
     Plarail_StopA,
     Plarail_StopB,
     Plarail_Speed_UpAF,
@@ -18,7 +24,7 @@ enum {
     Plarail_Speed_UpBF,
     Plarail_Speed_UpBB,
     Plarail_Speed_DownA,
-    Plarail_Speed_DownB
+    Plarail_Speed_DownB,
 };
 
 struct btoir;
