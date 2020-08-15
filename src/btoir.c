@@ -425,41 +425,37 @@ int bto_rec_start(struct btoir *bto, uint freq) {
     const uint ir_read_stop_off_time = 0x0474;  // 読み込み停止 OFF時間 30ms = 30ms / 38kHz = 1140 =0x474
 
     // パラメータチェック
-    if (devh != NULL && IR_FREQ_MIN <= freq && freq <= IR_FREQ_MAX) {
-        // データセット
-        outbuffer[0] = 0x31;
-        outbuffer[1] = (byte)((freq >> 8) & 0xFF);
-        outbuffer[2] = (byte)(freq & 0xFF);
-        outbuffer[3] = 1;                                            // 読み込み停止フラグ　停止あり
-        outbuffer[4] = (byte)((ir_read_stop_on_time >> 8) & 0xFF);   // 読み込み停止ON時間MSB
-        outbuffer[5] = (byte)(ir_read_stop_on_time & 0xFF);          // 読み込み停止ON時間LSB
-        outbuffer[6] = (byte)((ir_read_stop_off_time >> 8) & 0xFF);  // 読み込み停止OFF時間MSB
-        outbuffer[7] = (byte)(ir_read_stop_off_time & 0xFF);         // 読み込み停止OFF時間LSB
+    assert(devh != NULL);
+    if (!(IR_FREQ_MIN <= freq && freq <= IR_FREQ_MAX))
+        return -2;
 
-        if (libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE, &BytesWritten, 5000) == 0) {
-            // Now get the response packet from the firmware.
-            if (libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) == 0) {
-                // INBuffer[0] is an echo back of the command (see microcontroller firmware).
-                // INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).
-                if (inbuffer[0] == 0x31) {
-                    if (inbuffer[1] == 0x00) {  // OK
-                        i_ret = 0;
-                    } else {
-                        // NG
-                        i_ret = -3;
-                    }
-                }
-            } else {
-                // NG
-                i_ret = -3;
-            }
+    // データセット
+    outbuffer[0] = 0x31;
+    outbuffer[1] = (byte)((freq >> 8) & 0xFF);
+    outbuffer[2] = (byte)(freq & 0xFF);
+    outbuffer[3] = 1;                                            // 読み込み停止フラグ　停止あり
+    outbuffer[4] = (byte)((ir_read_stop_on_time >> 8) & 0xFF);   // 読み込み停止ON時間MSB
+    outbuffer[5] = (byte)(ir_read_stop_on_time & 0xFF);          // 読み込み停止ON時間LSB
+    outbuffer[6] = (byte)((ir_read_stop_off_time >> 8) & 0xFF);  // 読み込み停止OFF時間MSB
+    outbuffer[7] = (byte)(ir_read_stop_off_time & 0xFF);         // 読み込み停止OFF時間LSB
+
+    if (libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE, &BytesWritten, 5000) != 0)
+        return -3;
+
+    // Now get the response packet from the firmware.
+    if (libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) != 0)
+        return -3;
+
+    // INBuffer[0] is an echo back of the command (see microcontroller firmware).
+    // INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).
+    if (inbuffer[0] == 0x31) {
+        if (inbuffer[1] == 0x00) {
+            i_ret = 0;
         } else {
-            // NG
             i_ret = -3;
         }
-    } else {  // パラメータエラー
-        i_ret = -2;
     }
+
     return i_ret;
 }
 
@@ -472,29 +468,24 @@ int bto_rec_stop(struct btoir *bto) {
     int BytesRead = 0;
 
     // パラメータチェック
-    if (devh != NULL) {
-        // データセット
-        outbuffer[0] = 0x32;
+    assert(devh != NULL);
 
-        if (libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE, &BytesWritten, 5000) == 0) {
-            // Now get the response packet from the firmware.
-            if (libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) == 0) {
-                // INBuffer[0] is an echo back of the command (see microcontroller firmware).
-                // INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).
-                if (inbuffer[0] == 0x32) {  // OK
-                    i_ret = 0;
-                }
-            } else {
-                // NG
-                i_ret = -3;
-            }
-        } else {
-            // NG
-            i_ret = -3;
-        }
-    } else {  // パラメータエラー
-        i_ret = -2;
+    // データセット
+    outbuffer[0] = 0x32;
+    if (libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE, &BytesWritten, 5000) != 0)
+        return -3;
+
+    // Now get the response packet from the firmware.
+    if (libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) != 0) {
+        return -3;
     }
+
+    // INBuffer[0] is an echo back of the command (see microcontroller firmware).
+    // INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).
+    if (inbuffer[0] == 0x32) {
+        i_ret = 0;
+    }
+
     return i_ret;
 }
 
@@ -511,62 +502,60 @@ int bto_dump_record(struct btoir *bto, byte data[], uint data_buff_len, uint *bi
     uint ir_read_data_get_byte_count = 0;
 
     // パラメータチェック
-    if (devh != NULL) {
-        // 出力変数初期化
-        *bit_len = 0;
+    assert(devh != NULL);
 
-        // データセット
-        while (error_flag == false) {
-            outbuffer[0] = 0x33;
+    // 出力変数初期化
+    *bit_len = 0;
 
-            if (libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE, &BytesWritten, 5000) == 0) {
-                // Now get the response packet from the firmware.
-                if (libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) == 0) {
-                    // INBuffer[0] is an echo back of the command (see microcontroller firmware).
-                    // INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).
-                    if (inbuffer[0] == 0x33) {
-                        int tmp_total_size = 0;
-                        int tmp_start_pos = 0;
-                        byte tmp_read_size = 0;
-                        tmp_total_size = inbuffer[1];
-                        tmp_total_size = (tmp_total_size << 8) | inbuffer[2];
-                        tmp_start_pos = inbuffer[3];
-                        tmp_start_pos = (tmp_start_pos << 8) | inbuffer[4];
-                        tmp_read_size = inbuffer[5];
+    // データセット
+    while (error_flag == false) {
+        outbuffer[0] = 0x33;
 
-                        if (tmp_total_size > 0 && tmp_total_size >= (tmp_start_pos + tmp_read_size) &&
-                            tmp_read_size > 0) {
-                            for (fi = 0; fi < tmp_read_size; fi++) {
-                                if ((ir_read_data_get_byte_count + 3) < data_buff_len) {
-                                    data[ir_read_data_get_byte_count++] = inbuffer[6 + fi * 4];
-                                    data[ir_read_data_get_byte_count++] = inbuffer[7 + fi * 4];
-                                    data[ir_read_data_get_byte_count++] = inbuffer[8 + fi * 4];
-                                    data[ir_read_data_get_byte_count++] = inbuffer[9 + fi * 4];
-                                } else {
-                                    // NG
-                                    error_flag = true;
-                                    i_ret = -5;
-                                }
-                            }
-                        } else {  // 読み込み終了
-                            i_ret = 0;
-                            *bit_len = (uint)tmp_total_size;
-                            break;
-                        }
-                    }
-                } else {
-                    // NG
-                    error_flag = true;
-                    i_ret = -4;
-                }
+        if (libusb_interrupt_transfer(devh, BTO_EP_OUT, outbuffer, BUFF_SIZE, &BytesWritten, 5000) != 0) {
+            error_flag = true;
+            i_ret = -3;
+            continue;
+        }
+
+        // Now get the response packet from the firmware.
+        if (libusb_interrupt_transfer(devh, BTO_EP_IN, inbuffer, BUFF_SIZE, &BytesRead, 5000) != 0) {
+            error_flag = true;
+            i_ret = -4;
+            continue;
+        }
+
+        // INBuffer[0] is an echo back of the command (see microcontroller firmware).
+        // INBuffer[1] contains the I/O port pin value for the pushbutton (see microcontroller firmware).
+        if (inbuffer[0] != 0x33)
+            continue;
+
+        int tmp_total_size = 0;
+        int tmp_start_pos = 0;
+        byte tmp_read_size = 0;
+        tmp_total_size = inbuffer[1];
+        tmp_total_size = (tmp_total_size << 8) | inbuffer[2];
+        tmp_start_pos = inbuffer[3];
+        tmp_start_pos = (tmp_start_pos << 8) | inbuffer[4];
+        tmp_read_size = inbuffer[5];
+
+        if (!(tmp_total_size > 0 && tmp_total_size >= (tmp_start_pos + tmp_read_size) && tmp_read_size > 0)) {
+            i_ret = 0;
+            *bit_len = (uint)tmp_total_size;
+            break;
+        }
+
+        for (fi = 0; fi < tmp_read_size; fi++) {
+            if ((ir_read_data_get_byte_count + 3) < data_buff_len) {
+                data[ir_read_data_get_byte_count++] = inbuffer[6 + fi * 4];
+                data[ir_read_data_get_byte_count++] = inbuffer[7 + fi * 4];
+                data[ir_read_data_get_byte_count++] = inbuffer[8 + fi * 4];
+                data[ir_read_data_get_byte_count++] = inbuffer[9 + fi * 4];
             } else {
-                // NG
                 error_flag = true;
-                i_ret = -3;
+                i_ret = -5;
             }
         }
-    } else {  // パラメータエラー
-        i_ret = -2;
     }
+
     return i_ret;
 }
