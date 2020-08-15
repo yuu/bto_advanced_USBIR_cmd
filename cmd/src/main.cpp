@@ -13,6 +13,7 @@
 #include <optional>
 
 #include "btoir.h"
+#include "plarail.h"
 
 #define OPTION_NUM 10
 #define FORMAT_NUM 4
