@@ -51,12 +51,12 @@ struct btoir;
 struct btoir *bto_open();
 void bto_close(struct btoir *bto);
 
-int writeUSBIR(struct btoir *bto, enum IR_FORMAT format_type, const byte *code, int code_len);
-int writeUSBIRData(struct btoir *bto, uint freq, const byte *data, uint data_count);
+int bto_writeUSBIR(struct btoir *bto, enum IR_FORMAT format_type, const byte *code, int code_len);
+int bto_writeUSBIRData(struct btoir *bto, uint freq, const byte *data, uint data_count);
 
-int recUSBIRData_Start(struct btoir *bto, uint freq);
-int recUSBIRData_Stop(struct btoir *bto);
-int readUSBIRData(struct btoir *bto, byte data[], uint data_buff_len, uint *bit_len);
+int bto_recUSBIRData_Start(struct btoir *bto, uint freq);
+int bto_recUSBIRData_Stop(struct btoir *bto);
+int bto_readUSBIRData(struct btoir *bto, byte data[], uint data_buff_len, uint *bit_len);
 
 #ifdef __cplusplus
 }

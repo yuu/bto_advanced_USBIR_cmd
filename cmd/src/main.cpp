@@ -272,24 +272,24 @@ int main(int argc, char *argv[]) {
         [=]() {
             int ret = 1;
             if (!data.empty()) {
-                if ((ret = writeUSBIRData(bto, frequency, data.data(), data.size())) < 0)
+                if ((ret = bto_writeUSBIRData(bto, frequency, data.data(), data.size())) < 0)
                     fprintf(stderr, "error %d\n", ret);
                 return ret;
             }
             if (code_flag || Code_flag) {
-                if ((ret = writeUSBIR(bto, *format, code.data(), code.size() * 8)) < 0)
+                if ((ret = bto_writeUSBIR(bto, *format, code.data(), code.size() * 8)) < 0)
                     fprintf(stderr, "error %d\n", ret);
                 return ret;
             }
             if (read_flag) {
-                if ((ret = recUSBIRData_Start(bto, frequency)) < 0)
+                if ((ret = bto_recUSBIRData_Start(bto, frequency)) < 0)
                     fprintf(stderr, "error %d\n", ret);
                 else
                     fprintf(stdout, "受信を開始しました。\n");
                 return ret;
             }
             if (stop_flag) {
-                if ((ret = recUSBIRData_Stop(bto)) < 0)
+                if ((ret = bto_recUSBIRData_Stop(bto)) < 0)
                     fprintf(stderr, "error %d\n", ret);
                 else
                     fprintf(stdout, "受信を停止しました。\n");
@@ -298,7 +298,7 @@ int main(int argc, char *argv[]) {
             if (get_flag) {
                 auto data = new byte[MAX_BYTE_ARRAY_SIZE];
                 uint ibit_len = 0;
-                if ((ret = readUSBIRData(bto, data, MAX_BYTE_ARRAY_SIZE, &ibit_len)) < 0)
+                if ((ret = bto_readUSBIRData(bto, data, MAX_BYTE_ARRAY_SIZE, &ibit_len)) < 0)
                     fprintf(stderr, "error %d\n", ret);
                 else {
                     fprintf(stderr, "取得したbyte配列の要素数:%d\n", ibit_len * 4);
