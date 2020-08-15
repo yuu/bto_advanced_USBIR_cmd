@@ -140,7 +140,7 @@ libusb_device_handle *open_device(libusb_context *ctx) {
     return devh;
 }
 
-int bto_writeUSBIR(struct btoir *bto, enum IR_FORMAT format_type, const byte *code, int code_len) {
+int bto_write_code(struct btoir *bto, enum IR_FORMAT format_type, const byte *code, int code_len) {
     struct libusb_device_handle *devh = bto->dev_handle;
     uint reader_code = 0, bit_0 = 0, bit_1 = 0, stop_code = FORMAT_STOP_CODE;
     int i_ret = -1;
@@ -316,7 +316,7 @@ static int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint b
     return i_ret;
 }
 
-int bto_writeUSBIRData(struct btoir *bto, uint freq, const byte *data, uint data_count) {
+int bto_write(struct btoir *bto, uint freq, const byte *data, uint data_count) {
     struct libusb_device_handle *devh = bto->dev_handle;
     uint fi;
     int i_ret = -1;
@@ -414,7 +414,7 @@ int bto_writeUSBIRData(struct btoir *bto, uint freq, const byte *data, uint data
     return i_ret;
 }
 
-int bto_recUSBIRData_Start(struct btoir *bto, uint freq) {
+int bto_rec_start(struct btoir *bto, uint freq) {
     struct libusb_device_handle *devh = bto->dev_handle;
     int i_ret = -1;
     byte outbuffer[BUFF_SIZE];
@@ -463,7 +463,7 @@ int bto_recUSBIRData_Start(struct btoir *bto, uint freq) {
     return i_ret;
 }
 
-int bto_recUSBIRData_Stop(struct btoir *bto) {
+int bto_rec_stop(struct btoir *bto) {
     struct libusb_device_handle *devh = bto->dev_handle;
     int i_ret = -1;
     byte outbuffer[BUFF_SIZE];
@@ -498,7 +498,7 @@ int bto_recUSBIRData_Stop(struct btoir *bto) {
     return i_ret;
 }
 
-int bto_readUSBIRData(struct btoir *bto, byte data[], uint data_buff_len, uint *bit_len) {
+int bto_dump_record(struct btoir *bto, byte data[], uint data_buff_len, uint *bit_len) {
     struct libusb_device_handle *devh = bto->dev_handle;
     uint fi;
     int i_ret = -1;

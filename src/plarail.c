@@ -23,7 +23,7 @@ static int writeUSBIRData_Ushort(struct btoir *bto, uint freq, ushort udata[], u
             data[fi] = (udata[ji] >> 8) & 0xFF;
     }
 
-    return bto_writeUSBIRData(bto, freq, data, dataCount);
+    return bto_write(bto, freq, data, dataCount);
 }
 
 int writeUSBIR_Plarail_Stop(struct btoir *bto, uint band) {
