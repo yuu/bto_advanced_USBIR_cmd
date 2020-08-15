@@ -1,5 +1,7 @@
 #pragma once
 
+#include "type.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -10,16 +12,6 @@ extern "C" {
 #define PRODUCT_ID 0x003a
 #define BTO_EP_IN  0x84
 #define BTO_EP_OUT 0x04
-
-typedef unsigned char byte;
-typedef unsigned int uint;
-typedef unsigned short ushort;
-
-#ifndef __cplusplus
-typedef unsigned char bool;
-#define true	1
-#define false	0
-#endif
 
 #define BUFF_SIZE 64
 
@@ -54,30 +46,6 @@ enum IR_FORMAT {
     IR_FORMAT_MITSUBISHI
 };
 
-enum
-{
-    PLARAIL_BAND_BAND_A = 1,
-    PLARAIL_BAND_BAND_B
-};
-
-enum
-{
-    PLARAIL_DIRECTION_FORWARD = 1,
-    PLARAIL_DIRECTION_BACKWARD
-};
-
-enum
-{
-    Plarail_StopA,
-    Plarail_StopB,
-    Plarail_Speed_UpAF,
-    Plarail_Speed_UpAB,
-    Plarail_Speed_UpBF,
-    Plarail_Speed_UpBB,
-    Plarail_Speed_DownA,
-    Plarail_Speed_DownB
-};
-
     struct btoir;
 
     struct btoir *bto_open();
@@ -85,10 +53,6 @@ enum
 
 int writeUSBIR(struct btoir *bto, enum IR_FORMAT format_type, const byte *code, int code_len);
 int writeUSBIRData(struct btoir *bto, uint freq, const byte *data, uint data_count);
-
-int writeUSBIR_Plarail_Stop(struct btoir *bto, uint band);
-int writeUSBIR_Plarail_Speed_Up(struct btoir *bto, uint band, uint dir);
-int writeUSBIR_Plarail_Speed_Down(struct btoir *bto, uint band);
 
 int recUSBIRData_Start(struct btoir *bto, uint freq);
 int recUSBIRData_Stop(struct btoir *bto);
