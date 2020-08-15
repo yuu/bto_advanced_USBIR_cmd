@@ -36,8 +36,8 @@ $ bto_advanced_USBIR_cmd --Plarail_Speed_UpAF
 
 #include "btoir.h"
 
-void close_device(libusb_context *ctx, libusb_device_handle *devh);
-libusb_device_handle *open_device(libusb_context *ctx);
+static void close_device(libusb_context *ctx, libusb_device_handle *devh);
+static libusb_device_handle *open_device(libusb_context *ctx);
 static int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint bit_0, uint bit_1, uint stop_code,
                           const byte *code, uint bit_len);
 
@@ -71,12 +71,12 @@ void bto_close(struct btoir *bto) {
     free(bto);
 }
 
-void close_device(libusb_context *ctx, libusb_device_handle *devh) {
+static void close_device(libusb_context *ctx, libusb_device_handle *devh) {
     libusb_close(devh);
     libusb_exit(ctx);
 }
 
-libusb_device_handle *open_device(libusb_context *ctx) {
+static libusb_device_handle *open_device(libusb_context *ctx) {
     struct libusb_device_handle *devh = NULL;
     libusb_device *dev;
     libusb_device **devs;
