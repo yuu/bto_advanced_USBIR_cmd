@@ -1,22 +1,50 @@
+#include <iostream>
 #include <memory>
 #include <string>
-#include <iostream>
 
-#include <grpc++/grpc++.h>
 #include <grpc++/ext/proto_server_reflection_plugin.h>
+#include <grpc++/grpc++.h>
 
 #include "bto/ir_service.grpc.pb.h"
+#include "btoir.h"
 
 using grpc::Server;
 using grpc::ServerBuilder;
-// using grpc::ServerContext;
-// using grpc::Status;
+using grpc::ServerContext;
+using grpc::Status;
 
 class IRServiceImpl final : public bto::IRService::Service {
-    virtual ::grpc::Status Write(::grpc::ServerContext* context, const ::bto::WriteRequest* request, ::bto::Result* response) override {
-        std::cout << "Write function" << std::endl;
-        response->set_code(200);
-        return ::grpc::Status::OK;
+    Status Write(ServerContext* context, const bto::WriteRequest* request, bto::Result* response) override {
+        const auto data = reinterpret_cast<const byte*>(request->data().c_str());
+        const auto length = request->data().length();
+
+        const auto ret = bto_write(nullptr, request->frequency(), data, length);
+        response->set_code(ret);
+
+        return Status::OK;
+    }
+
+    Status RecStart(ServerContext* context, const bto::RecStartRequest* request, bto::Result* response) override {
+        const auto ret = bto_rec_start(nullptr, request->frequency());
+        response->set_code(ret);
+
+        return Status::OK;
+    }
+
+    Status RecStop(ServerContext* context, const bto::Empty* request, bto::Result* response) override {
+        const auto ret = bto_rec_stop(nullptr);
+        response->set_code(ret);
+
+        return Status::OK;
+    }
+
+    Status DumpRecord(ServerContext* context, const bto::Empty* request, bto::DumpRecordResponse* response) override {
+        uint actual_size = 0;
+        auto data = new byte[MAX_BYTE_ARRAY_SIZE];
+        const auto ret = bto_dump_record(nullptr, data, MAX_BYTE_ARRAY_SIZE, &actual_size);
+        // response->set_data(data);
+
+        return Status::OK;
     }
 };
 
@@ -42,6 +70,6 @@ void run_server() {
     server->Wait();
 }
 
-int main(int ac, char **av) {
+int main(int ac, char** av) {
     run_server();
 }
