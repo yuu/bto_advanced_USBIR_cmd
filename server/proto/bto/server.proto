@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package bto;
+
+message WriteRequest {
+  int32 frequency = 1;
+}
+
+message Result {
+  int32 code = 1;
+}
+
+service BtoService {
+  rpc Write(WriteRequest) returns (Result) {}
+
+  // rpc RecStart(uint freq);
+  // rpc RecStop();
+  // rpc DumpRecord(byte data[], uint data_buff_len, uint *bit_len);
+}
