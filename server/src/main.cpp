@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include <grpc++/grpc++.h>
+#include <grpc++/ext/proto_server_reflection_plugin.h>
 
 #include "bto/ir_service.grpc.pb.h"
 
@@ -22,6 +23,7 @@ class IRServiceImpl final : public bto::IRService::Service {
 void run_server() {
     std::string server_address("0.0.0.0:50051");
 
+    grpc::reflection::InitProtoReflectionServerBuilderPlugin();
     ServerBuilder builder;
     // Listen on the given address without any authentication mechanism.
     builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());

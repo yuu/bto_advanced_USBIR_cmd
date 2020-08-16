@@ -24,6 +24,7 @@ target_link_directories(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   PUBLIC ${PROTOBUF_LIBRARIES}
   PUBLIC ${GRPC_LIBRARIES}
+  PUBLIC grpc++_reflection
   PUBLIC ${LIBUSB_LIBRARIES}
 )
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
