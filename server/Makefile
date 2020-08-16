@@ -28,7 +28,7 @@ all: system-check $(GEN_PATH) generate
 
 generate: dep_files  ## generate files
 
-dep_files: $(GEN_PATH)/bto/server.grpc.pb.cc $(GEN_PATH)/bto/server.pb.cc
+dep_files: $(GEN_PATH)/bto/ir_service.grpc.pb.cc $(GEN_PATH)/bto/ir_service.pb.cc
 
 $(GEN_PATH):
 	mkdir -p $@

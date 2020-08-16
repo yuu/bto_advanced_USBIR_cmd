@@ -10,7 +10,7 @@ message Result {
   int32 code = 1;
 }
 
-service BtoService {
+service IRService {
   rpc Write(WriteRequest) returns (Result) {}
 
   // rpc RecStart(uint freq);
