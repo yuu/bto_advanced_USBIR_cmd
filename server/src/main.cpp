@@ -19,6 +19,10 @@ void run_server(IR *ir) {
     IRServiceImpl service(std::move(std::unique_ptr<IR>(ir)));
     builder.RegisterService(&service);
 
+    grpc::ResourceQuota quota;
+    quota.SetMaxThreads(1);
+    builder.SetResourceQuota(quota);
+
     // Finally assemble the server.
     std::unique_ptr<Server> server(builder.BuildAndStart());
     std::cout << "Server listening on " << server_address << std::endl;
