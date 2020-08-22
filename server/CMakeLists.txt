@@ -7,6 +7,11 @@ pkg_check_modules(LIBUSB libusb-1.0 REQUIRED)
 pkg_check_modules(PROTOBUF protobuf>=3.12 REQUIRED)
 pkg_check_modules(GRPC grpc++>=1.30 REQUIRED)
 
+set(LIBS)
+if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "armv7l")
+   set(LIBS ${LIBS} atomic)
+endif()
+
 file(GLOB SOURCES src/*.cpp gen/**/*.cc)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
@@ -32,5 +37,7 @@ target_link_libraries(${PROJECT_NAME}
 
   PUBLIC bto_advanced_usbir_lib
   PUBLIC ${LIBUSB_LIBRARIES}
+
+  PUBLIC ${LIBS}
 )
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
