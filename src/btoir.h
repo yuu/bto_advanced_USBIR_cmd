@@ -27,7 +27,7 @@ struct btoir;
 struct btoir *bto_open();
 void bto_close(struct btoir *bto);
 
-int bto_write_code(struct btoir *bto, enum IR_FORMAT format_type, const byte *code, int code_len);
+int bto_write_code(struct btoir *bto, enum IR_FORMAT format_type, const uint *code, int code_len);
 int bto_write(struct btoir *bto, uint freq, const uint *data, uint data_count);
 
 int bto_rec_start(struct btoir *bto, uint freq);

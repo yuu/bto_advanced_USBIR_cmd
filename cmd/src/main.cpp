@@ -128,9 +128,9 @@ int main(int argc, char *argv[]) {
 
     int code_flag = 0;
     int Code_flag = 0;
-    std::vector<byte> code;
+    std::vector<uint> code;
 
-    std::vector<byte> data;
+    std::vector<uint> data;
 
     int read_flag = 0;
     int stop_flag = 0;
@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
                 while ((s = strtok(optarg, ", ")) != NULL) {
                     optarg = NULL;
                     char *endPtr;
-                    const auto d = static_cast<byte>(strtol(s, &endPtr, 0));
+                    const auto d = static_cast<uint>(strtol(s, &endPtr, 0));
                     data.emplace_back(d);
                 }
                 break;
@@ -166,11 +166,11 @@ int main(int argc, char *argv[]) {
             case 'c': {
                 char *s;
                 code_flag = 1;
-                std::vector<byte> tmp;
+                std::vector<uint> tmp;
                 while ((s = strtok(optarg, ", ")) != NULL) {
                     optarg = NULL;
                     char *endPtr;
-                    const auto d = static_cast<byte>(strtol(s, &endPtr, 0));
+                    const auto d = static_cast<uint>(strtol(s, &endPtr, 0));
                     tmp.emplace_back(d);
                 }
                 code = std::move(tmp);
@@ -179,12 +179,12 @@ int main(int argc, char *argv[]) {
             case 'C': {
                 Code_flag = 1;
                 const auto str_len = strlen(optarg);
-                std::vector<byte> tmp;
+                std::vector<uint> tmp;
                 for (auto fi = 0; fi < str_len / 2; fi++) {
                     char hex_buff[5] = "0x";
                     strncat(hex_buff, &optarg[fi * 2], 2);
                     char *endPtr;
-                    const auto d = static_cast<byte>(strtol(hex_buff, &endPtr, 0));
+                    const auto d = static_cast<uint>(strtol(hex_buff, &endPtr, 0));
                     tmp.emplace_back(d);
                 }
                 code = std::move(tmp);

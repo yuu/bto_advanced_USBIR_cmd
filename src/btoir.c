@@ -63,7 +63,7 @@ $ bto_advanced_USBIR_cmd --Plarail_Speed_UpAF
 static libusb_device_handle *open_device(libusb_context *ctx);
 static void close_device(libusb_context *ctx, libusb_device_handle *devh);
 static int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint bit_0, uint bit_1, uint stop_code,
-                          const byte *code, uint bit_len);
+                          const uint *code, uint bit_len);
 
 struct btoir {
     libusb_context *ctx;
@@ -95,7 +95,7 @@ void bto_close(struct btoir *bto) {
     free(bto);
 }
 
-int bto_write_code(struct btoir *bto, enum IR_FORMAT format_type, const byte *code, int code_len) {
+int bto_write_code(struct btoir *bto, enum IR_FORMAT format_type, const uint *code, int code_len) {
     struct libusb_device_handle *devh = bto->dev_handle;
     uint reader_code = 0, bit_0 = 0, bit_1 = 0, stop_code = FORMAT_STOP_CODE;
     int i_ret = -1;
@@ -455,7 +455,7 @@ static void close_device(libusb_context *ctx, libusb_device_handle *devh) {
 }
 
 static int writeUSBIRCode(struct btoir *bto, uint freq, uint reader_code, uint bit_0, uint bit_1, uint stop_code,
-                          const byte *code, uint bit_len) {
+                          const uint *code, uint bit_len) {
     struct libusb_device_handle *devh = bto->dev_handle;
     uint fi;
     int byte_pos, bit_pos, bit_mask, tmp_data;
