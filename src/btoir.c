@@ -141,7 +141,7 @@ int bto_write_code(struct btoir *bto, enum IR_FORMAT format_type, const byte *co
     return i_ret;
 }
 
-int bto_write(struct btoir *bto, uint freq, const byte *data, uint data_count) {
+int bto_write(struct btoir *bto, uint freq, const uint *data, uint data_count) {
     struct libusb_device_handle *devh = bto->dev_handle;
     uint fi;
     int i_ret = -1;

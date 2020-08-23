@@ -10,7 +10,7 @@ static int writeUSBIRData_Ushort(struct btoir *bto, uint freq, ushort udata[], u
     uint fi;
     int ji;
     uint dataCount = bit_len * 4;
-    byte *data = malloc(dataCount);
+    uint *data = malloc(dataCount);
     memset(data, 0x00, dataCount);
 
     // dataCountではなくele_num*2なのは、要素数が足りない場合に対応する為
