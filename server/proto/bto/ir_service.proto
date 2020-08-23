@@ -4,7 +4,7 @@ package bto;
 
 message WriteRequest {
   int32 frequency = 1;
-  bytes data = 2;
+  repeated uint32 data = 2;
 }
 
 message RecStartRequest {

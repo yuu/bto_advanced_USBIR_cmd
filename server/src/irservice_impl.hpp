@@ -22,7 +22,10 @@ public:
     }
 
     Status Write(ServerContext* context, const bto::WriteRequest* request, bto::Result* response) override {
-        const auto ret = ir->write(request->frequency(), request->data());
+        const auto length = request->data().size();
+        const auto data = request->data().data();
+
+        const auto ret = ir->write(request->frequency(), data, length);
         response->set_code(ret);
 
         return Status::OK;

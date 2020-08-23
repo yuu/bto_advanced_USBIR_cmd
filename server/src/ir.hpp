@@ -12,11 +12,8 @@ public:
         bto_close(this->bto);
     };
 
-    int32_t write(uint freq, const std::string &data) {
-        const auto d = reinterpret_cast<const byte*>(data.c_str());
-        const auto length = data.length();
-
-        return bto_write(this->bto, freq, d, length);
+    int32_t write(uint freq, const unsigned int *data, const int32_t length) {
+        return bto_write(this->bto, freq, data, length);
     }
 
     int32_t rec_start(uint freq) {
