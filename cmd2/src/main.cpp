@@ -30,7 +30,14 @@ public:
         req.set_frequency(38000);
 
         grpc::Status status = this->stub_->Write(&ctx, req, &res);
+        if (status.ok()) {
+            std::cout << "OK" << std::endl;
+            std::cout << res.code() << std::endl;
+            return;
+        }
 
+        std::cout << "NG" << std::endl;
+        std::cout << status.error_code() << ": " << status.error_message() << std::endl;
     }
 
 private:
@@ -43,7 +50,7 @@ int main(int argc, char **argv) {
     std::stringstream fmt;
     fmt << p.get<std::string>("host") << ":" << p.get<int>("port");
     const auto addr = fmt.str();
-    std::cout << addr << std::endl;
+    std::cout << "connect: " << addr << std::endl;
 
     auto chan = grpc::CreateChannel(addr, grpc::InsecureChannelCredentials());
     IRServiceClient client(chan);
