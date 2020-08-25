@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package bto;
+
+message WriteRequest {
+  int32 frequency = 1;
+  repeated uint32 data = 2;
+}
+
+message RecStartRequest {
+  int32 frequency = 1;
+}
+
+message Result {
+  int32 code = 1;
+}
+
+message Empty {}
+
+message DumpRecordResponse {
+  bytes data = 1;
+}
+
+service IRService {
+  rpc Write(WriteRequest) returns (Result) {}
+
+  rpc RecStart(RecStartRequest) returns (Result) {}
+
+  rpc RecStop(Empty) returns (Result) {}
+
+  rpc DumpRecord(Empty) returns (DumpRecordResponse) {}
+}
