@@ -1,0 +1,14 @@
+[Unit]
+Description=Provide IR Service by gRPC
+After=syslog.target network-online.target
+Before=homebridge.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/bto_server
+Restart=on-failure
+RestartSec=10
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
