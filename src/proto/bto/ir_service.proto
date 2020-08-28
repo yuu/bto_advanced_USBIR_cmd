@@ -7,26 +7,10 @@ message WriteRequest {
   repeated uint32 data = 2;
 }
 
-message RecStartRequest {
-  int32 frequency = 1;
-}
-
-message Result {
+message WriteResponse {
   int32 code = 1;
 }
 
-message Empty {}
-
-message DumpRecordResponse {
-  bytes data = 1;
-}
-
 service IRService {
-  rpc Write(WriteRequest) returns (Result) {}
-
-  rpc RecStart(RecStartRequest) returns (Result) {}
-
-  rpc RecStop(Empty) returns (Result) {}
-
-  rpc DumpRecord(Empty) returns (DumpRecordResponse) {}
+  rpc Write(WriteRequest) returns (WriteResponse) {}
 }

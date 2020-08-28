@@ -23,7 +23,7 @@ public:
     void write(std::istream &in) {
         grpc::ClientContext ctx;
         bto::WriteRequest req;
-        bto::Result res;
+        bto::WriteResponse res;
 
         uint32_t x = 0;
         std::string y;
