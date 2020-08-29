@@ -163,11 +163,11 @@ int main(int argc, char **argv) {
         }
         client.write(fs);
     } else if (is_recs) {
-
+        client.rec_start();
     } else if (is_rece) {
-
+        client.rec_stop();
     } else if (is_dump) {
-
+        client.dump();
     } else {
         std::cerr << p.usage() << std::endl;
     }
