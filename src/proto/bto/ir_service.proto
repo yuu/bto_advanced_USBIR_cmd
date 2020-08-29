@@ -11,6 +11,33 @@ message WriteResponse {
   int32 code = 1;
 }
 
+message RecStartRequest {
+  int32 frequency = 1;
+}
+
+message RecStartResponse {
+  int32 code = 1;
+}
+
+message RecStopRequest {}
+
+message RecStopResponse {
+  int32 code = 1;
+}
+
+message DumpRecordRequest {}
+
+message DumpRecordResponse {
+  int32 code = 1;
+  repeated uint32 data = 2;
+}
+
 service IRService {
   rpc Write(WriteRequest) returns (WriteResponse) {}
+
+  rpc RecStart(RecStartRequest) returns (RecStartResponse) {}
+
+  rpc RecStop(RecStopRequest) returns (RecStopResponse) {}
+
+  rpc DumpRecord(DumpRecordRequest) returns (DumpRecordResponse) {}
 }
