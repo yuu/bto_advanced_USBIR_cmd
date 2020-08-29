@@ -28,11 +28,12 @@ $ bto_advanced_USBIR_cmd --Plarail_Speed_UpAF
 */
 #include <assert.h>
 #include <errno.h>
-#include <libusb.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#include <libusb.h>
 
 #include "btoir.h"
 
@@ -74,7 +75,7 @@ struct btoir *bto_open() {
     struct libusb_context *ctx = NULL;
     const int ret = libusb_init(&ctx);
     if (ret < 0) {
-        perror("libusb_init\n");
+        perror("libusb_init");
         return NULL;
     }
 
@@ -394,6 +395,8 @@ static libusb_device_handle *open_device(libusb_context *ctx) {
     int i = 0;
     int cnt = 0;
 
+    libusb_set_option(ctx, LIBUSB_OPTION_LOG_LEVEL, 3);
+
     if ((libusb_get_device_list(ctx, &devs)) < 0) {
         perror("no usb device found");
         return NULL;
@@ -442,7 +445,7 @@ static libusb_device_handle *open_device(libusb_context *ctx) {
 
     r = libusb_claim_interface(devh, 3);
     if (r < 0) {
-        fprintf(stderr, "claim interface failed (%d): %s\n", r, strerror(errno));
+        fprintf(stderr, "claim interface failed (%d): %s\n", r, libusb_error_name(r));
         return NULL;
     }
 
