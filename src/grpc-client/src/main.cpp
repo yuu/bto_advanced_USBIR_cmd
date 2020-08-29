@@ -28,23 +28,21 @@ public:
         uint32_t x = 0;
         std::string y;
         while (std::getline(in, y, ',')) {
-            std::cout << std::hex << y;
             x = std::stoi(y.data(), nullptr, 16);
             req.add_data(x);
         }
-        std::cout << std::endl;
 
         req.set_frequency(38000);
 
         grpc::Status status = this->stub_->Write(&ctx, req, &res);
         if (status.ok()) {
-            std::cout << "OK" << std::endl;
-            std::cout << res.code() << std::endl;
+            std::cerr << "OK" << std::endl;
+            std::cerr << res.code() << std::endl;
             return;
         }
 
-        std::cout << "NG" << std::endl;
-        std::cout << status.error_code() << ": " << status.error_message() << std::endl;
+        std::cerr << "NG" << std::endl;
+        std::cerr << status.error_code() << ": " << status.error_message() << std::endl;
     }
 
 private:
@@ -57,7 +55,7 @@ int main(int argc, char **argv) {
     std::stringstream fmt;
     fmt << p.get<std::string>("host") << ":" << p.get<int>("port");
     const auto addr = fmt.str();
-    std::cout << "connect: " << addr << std::endl;
+    std::cerr << "connect: " << addr << std::endl;
 
     auto chan = grpc::CreateChannel(addr, grpc::InsecureChannelCredentials());
     IRServiceClient client(chan);
@@ -66,7 +64,7 @@ int main(int argc, char **argv) {
     std::fstream fs;
     fs.open(fpath, std::fstream::in);
     if (!fs.is_open()) {
-        std::cout << "open error" << std::endl;
+        std::cerr << "open error" << std::endl;
     }
 
     client.write(fs);
