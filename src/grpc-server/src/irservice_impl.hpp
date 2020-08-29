@@ -5,8 +5,8 @@
 
 #include "bto/ir_service.grpc.pb.h"
 
-#include "ir.hpp"
 #include "btoir.h"
+#include "ir.hpp"
 
 using grpc::Server;
 using grpc::ServerBuilder;
@@ -18,10 +18,11 @@ class IRServiceImpl final : public bto::IRService::Service {
 public:
     IRServiceImpl(std::unique_ptr<IR> ir)
         : bto::IRService::Service()
-        , ir(std::move(ir)) {
-    }
+        , ir(std::move(ir)) {}
 
-    Status Write(ServerContext* context, const bto::WriteRequest* request, bto::WriteResponse* response) override {
+    Status Write(ServerContext* context,
+                 const bto::WriteRequest* request,
+                 bto::WriteResponse* response) override {
         const auto length = request->data().size();
         const auto data = request->data().data();
 
