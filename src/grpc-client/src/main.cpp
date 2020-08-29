@@ -121,7 +121,12 @@ public:
         std::cerr << "NG" << std::endl;
     }
 
-    void print_csv(const PROTOBUF_NAMESPACE_ID::RepeatedField<PROTOBUF_NAMESPACE_ID::uint32> & data) {
+    void print_csv(const PROTOBUF_NAMESPACE_ID::RepeatedField<PROTOBUF_NAMESPACE_ID::uint32> &data) {
+        if  (data.empty()) {
+            std::cerr << "empty data" << std::endl;
+            return;
+        }
+
         std::cout << "0x" << std::hex << std::setw(2) << std::setfill('0') << *data.begin();
         std::for_each(data.begin() + 1, data.end(),
                       [](uint32_t x) {
