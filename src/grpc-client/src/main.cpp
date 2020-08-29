@@ -149,14 +149,28 @@ int main(int argc, char **argv) {
     auto chan = grpc::CreateChannel(addr, grpc::InsecureChannelCredentials());
     IRServiceClient client(chan);
 
-    auto fpath = p.get<std::string>("file");
-    std::fstream fs;
-    fs.open(fpath, std::fstream::in);
-    if (!fs.is_open()) {
-        std::cerr << "open error" << std::endl;
-    }
+    const auto is_write = p.exist("write");
+    const auto is_recs = p.exist("rec-start");
+    const auto is_rece = p.exist("rec-stop");
+    const auto is_dump = p.exist("dump");
+    if (is_write) {
+        auto fpath = p.get<std::string>("file");
+        std::fstream fs;
+        fs.open(fpath, std::fstream::in);
+        if (!fs.is_open()) {
+            std::cerr << "open error" << std::endl;
+            return 1;
+        }
+        client.write(fs);
+    } else if (is_recs) {
 
-    client.write(fs);
+    } else if (is_rece) {
+
+    } else if (is_dump) {
+
+    } else {
+        std::cerr << p.usage() << std::endl;
+    }
 
     return 0;
 }
