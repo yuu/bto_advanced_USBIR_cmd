@@ -1,5 +1,6 @@
 #include <fstream>
 #include <algorithm>
+#include <iomanip>
 
 #include "cmdline.h"
 
@@ -121,10 +122,12 @@ public:
     }
 
     void print_csv(const PROTOBUF_NAMESPACE_ID::RepeatedField<PROTOBUF_NAMESPACE_ID::uint32> & data) {
-        std::cout << *data.begin();
-        for (auto &&x : data) {
-            std::cout << ", " << std::hex << x;
-        }
+        std::cout << "0x" << std::hex << std::setw(2) << std::setfill('0') << *data.begin();
+        std::for_each(data.begin() + 1, data.end(),
+                      [](uint32_t x) {
+                          std::cout << ", 0x" << std::hex << std::setw(2) << std::setfill('0') << x;
+                      });
+
         std::cout << std::endl;
     }
 

@@ -59,7 +59,8 @@ public:
         const auto ret = ir->dump_record(data.get(), MAX_BYTE_ARRAY_SIZE, &actual_size);
         response->set_code(ret);
 
-        for (int32_t i = 0; i < actual_size; ++i) {
+        const auto max = actual_size * 4;
+        for (int32_t i = 0; i < max; ++i) {
             response->add_data(data[i]);
         }
 
