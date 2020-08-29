@@ -9,15 +9,42 @@
 #include <google/protobuf/repeated_field.h>
 #include <google/protobuf/port_def.inc>
 
-cmdline::parser parser_build(int argc, char **argv) {
-    cmdline::parser p;
-    p.add<std::string>("host", 'h', "host name", false, "localhost");
-    p.add<int>("port", 'p', "port number", false, 50051, cmdline::range(1, 65535));
-    p.add<std::string>("file", 'f', "file path for send data", true, "");
-    p.parse_check(argc, argv);
+class ParserBuilder {
+public:
+    ParserBuilder() : p(new cmdline::parser()) {}
 
-    return p;
-}
+    ~ParserBuilder() {}
+
+    cmdline::parser fin() {
+        return *p;
+    }
+
+    ParserBuilder &cmdline_parser() {
+        p->add<std::string>("host", 'h', "host name", false, "localhost");
+        p->add<int>("port", 'p', "port number", false, 50051, cmdline::range(1, 65535));
+        return *this;;
+    }
+
+    ParserBuilder &subcmd_write() {
+        p->add("write", '\0', "send data");
+        p->add<std::string>("file", 'f', "file path for send data", false);
+        return *this;
+    }
+
+    ParserBuilder &subcmd_rec() {
+        p->add("rec-start", '\0', "record start");
+        p->add("rec-stop", '\0', "record stop");
+        return *this;
+    }
+
+    ParserBuilder &subcmd_dump() {
+        p->add("dump", '\0', "dump record to stdout");
+        return *this;
+    }
+
+private:
+    cmdline::parser *p;
+};
 
 class IRServiceClient {
 public:
@@ -106,7 +133,13 @@ private:
 };
 
 int main(int argc, char **argv) {
-    auto p = parser_build(argc, argv);
+    auto p = ParserBuilder()
+        .cmdline_parser()
+        .subcmd_write()
+        .subcmd_rec()
+        .subcmd_dump()
+        .fin();
+    p.parse_check(argc, argv);
 
     std::stringstream fmt;
     fmt << p.get<std::string>("host") << ":" << p.get<int>("port");
